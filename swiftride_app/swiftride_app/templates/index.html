@@ -11,8 +11,7 @@
       margin: 0;
       padding: 0;
       box-sizing: border-box;
-      /* font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; */
-      font-family: monospace;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     }
 
     :root {
@@ -772,72 +771,6 @@ body.dark-mode .theme-toggle {
         align-items: center;
       }
     }
-   .ride-booking {
-  margin-top: 30px;
-  padding: 25px;
-  /* background: rgba(255, 255, 255, 0.15);  */
-  background: rgba(20, 18, 18, 0.16); /* transparent glass */
-  backdrop-filter: blur(2px);           /* glass effect */
-  border-radius: 15px;
-  max-width: 420px;
-  box-shadow: 0 8px 25px rgba(0,0,0,0.2);
-  /* border: 1px solid rgba(255,255,255,0.3); */
-  transition: transform 0.3s;
-}
-
-.ride-booking h2 {
-  font-size: 1.5rem;
-  margin-bottom: 10px;
-}
-
-.ride-form {
-  display: flex;
-  flex-direction: column;
-  gap: 15px;
-}
-
-.input-group {
-  display: flex;
-  flex-direction: column;
-}
-
-.input-group label {
-  font-size: 0.9rem;
-  margin-bottom: 5px;
-  /* background: white; */
-  color: white;
-}
-
-.input-group input {
-  padding: 10px;
-  border: 1px solid #ccc;
-  border-radius: 25px;
-}
-
-.ride-form button {
-  padding: 12px;
-  background: black;
-  color: rgb(255, 255, 255);
-  border: none;
-  border-radius: 8px;
-  font-size: 1rem;
-  cursor: pointer;
-  transition: background 0.3s;
-}
-
-.ride-form button:hover {
-  /* background: #333; */
-  background: #181818;
-}
-.ride-booking:hover {
-  transform: translateY(-5px);
-}
-
-#price-output {
-  margin-top: 15px;
-  font-weight: bold;
-  color: green;
-}
   </style>
 </head>
 <body>
@@ -872,28 +805,6 @@ SwiftRide</a>
     <div class="hero-section">
       <h1>Premium Cab Services at Your Fingertips</h1>
       <p>Experience the future of transportation with SwiftRide. Book a ride in seconds, travel in style, and arrive safely at your destination.</p>
-      <!-- Section: Ride Booking -->
-<section class="ride-booking">
-  <h2>Book Your Ride</h2>
-  <p>Enter your pickup and drop-off locations to get an instant fare estimate.</p>
-
-  <div class="ride-form">
-    <div class="input-group">
-      <label for="pickup">Pickup location</label>
-      <input type="text" id="pickup" placeholder="Enter pickup location">
-    </div>
-
-    <div class="input-group">
-      <label for="dropoff">Dropoff location</label>
-      <input type="text" id="dropoff" placeholder="Enter dropoff location">
-    </div>
-
-    <button onclick="showPrice()">See prices</button>
-  </div>
-
-  <p id="price-output"></p>
-</section>
-
       
       <div class="hero-buttons">
         <button class="btn btn-primary" onclick="showPage('signup')">
