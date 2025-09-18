@@ -5,14 +5,22 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>SwiftRide - Premium Cab Services</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+<script async
+  src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY&callback=initMap">
+</script>
+
+
+
   <style>
     /* General reset and variables */
     * {
       margin: 0;
       padding: 0;
       box-sizing: border-box;
-      /* font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; */
-      font-family: monospace;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      /* font-family: monospace; */
     }
 
     :root {
@@ -55,7 +63,7 @@
   box-sizing: border-box;
     }
 
-    .nav-logo {
+  .nav-logo {
      display: flex;               /* align image + text */
   align-items: center;
   gap: 8px;                    /* spacing between logo and text */
@@ -64,7 +72,7 @@
   color: var(--primary);
   text-decoration: none;
     }
-    .logo-img {
+  .logo-img {
   width: 32px;   /* adjust size */
   height: 32px;
   object-fit: contain;
@@ -158,14 +166,14 @@ body.dark-mode .theme-toggle {
       margin: 0 auto;
     }
 
-    .hero-section h1 {
-      font-size: 3.5rem;
+    .hero-section h2 {
+      font-size: 2.5rem;
       margin-bottom: 20px;
       text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
     }
 
     .hero-section p {
-      font-size: 1.2rem;
+      font-size: small;
       margin-bottom: 30px;
       opacity: 0.9;
     }
@@ -772,52 +780,95 @@ body.dark-mode .theme-toggle {
         align-items: center;
       }
     }
-   .ride-booking {
+ /* Container */
+/* Glass style container */
+ /* Container */
+.ride-booking {
   margin-top: 30px;
   padding: 25px;
-  /* background: rgba(255, 255, 255, 0.15);  */
-  background: rgba(20, 18, 18, 0.16); /* transparent glass */
-  backdrop-filter: blur(2px);           /* glass effect */
+  background: rgba(20, 18, 18, 0.16); 
+  backdrop-filter: blur(2px);
   border-radius: 15px;
   max-width: 420px;
   box-shadow: 0 8px 25px rgba(0,0,0,0.2);
-  /* border: 1px solid rgba(255,255,255,0.3); */
   transition: transform 0.3s;
+}
+
+.ride-booking:hover {
+  transform: translateY(-5px);
 }
 
 .ride-booking h2 {
   font-size: 1.5rem;
   margin-bottom: 10px;
+  color: white;
 }
 
 .ride-form {
   display: flex;
   flex-direction: column;
-  gap: 15px;
+  gap: 10px;
 }
 
-.input-group {
+/* Input + icon row */
+.location-input {
   display: flex;
-  flex-direction: column;
+  align-items: center;
+  background: #f5f5f5;
+  border-radius: 10px;
+  padding: 8px 12px;
+  position: relative;
 }
 
-.input-group label {
-  font-size: 0.9rem;
-  margin-bottom: 5px;
-  /* background: white; */
-  color: white;
-}
-
-.input-group input {
+/* Input field */
+.location-input input {
+  flex: 1;
+  border: none;
+  outline: none;
   padding: 10px;
-  border: 1px solid #ccc;
-  border-radius: 25px;
+  border-radius: 6px;
+  background: transparent;
+  font-size: 0.95rem;
 }
 
+/* Circle (pickup) */
+.icon.pickup-icon {
+  width: 14px;
+  height: 14px;
+  background: black;
+  border-radius: 50%;
+  margin-right: 10px;
+}
+
+/* Square (dropoff) */
+.icon.dropoff-icon {
+  width: 14px;
+  height: 14px;
+  background: black;
+  border-radius: 2px;
+  margin-right: 10px;
+}
+
+/* Connector line */
+.connector {
+  height: 20px;
+  width: 2px;
+  background: black;
+  margin: 0 auto;
+}
+
+/* Map sign (pickup side) */
+.map-icon {
+  margin-left: 8px;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+/* Button */
 .ride-form button {
   padding: 12px;
   background: black;
-  color: rgb(255, 255, 255);
+  color: white;
   border: none;
   border-radius: 8px;
   font-size: 1rem;
@@ -826,18 +877,91 @@ body.dark-mode .theme-toggle {
 }
 
 .ride-form button:hover {
-  /* background: #333; */
   background: #181818;
 }
-.ride-booking:hover {
-  transform: translateY(-5px);
+.map-icon {
+  margin-left: 10px;
+  font-size: 18px;
+  color: #e74c3c;  /* Google Maps red */
+  cursor: pointer;
+  transition: transform 0.2s;
 }
 
+.map-icon:hover {
+  transform: scale(1.2);
+  color: #c0392b; /* darker red on hover */
+}
+
+
+/* Price result */
 #price-output {
   margin-top: 15px;
   font-weight: bold;
   color: green;
 }
+/* ride page css */
+.ride-container {
+  display: flex;
+  justify-content: flex-start; /* push content to the left */
+  align-items: center;        /* vertical center */
+  min-height: 60vh;           /* takes 60% of viewport height */
+  padding-left: 50px;         /* optional spacing from edge */
+  /* background: #f4f4f4;    */
+
+}
+
+.ride-form {
+  background: #fff;
+  padding: 25px;
+
+  border-radius: 15px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+  width: 350px;
+}
+
+.ride-input {
+  display: flex;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.icon-circle {
+  width: 20px;
+  height: 20px;
+  background: #007bff;
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: white;
+  margin-right: 10px;
+}
+
+.icon-square {
+  width: 20px;
+  height: 20px;
+  background: #ff0000;
+  margin-right: 10px;
+}
+
+.ride-line {
+  height: 30px;
+  width: 2px;
+  background: #aaa;
+  margin: 0 0 20px 9px;
+}
+/* map */
+#map {
+  width: 600px;
+  height: 400px;
+  margin-left: 30px;
+  border-radius: 15px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+}
+
+
+
+
   </style>
 </head>
 <body>
@@ -856,11 +980,15 @@ body.dark-mode .theme-toggle {
 
   <!-- Navigation -->
   <nav class="navbar">
-    <a href="#" class="nav-logo">  <img src="cab.jpg" alt="" class="logo-img">
+  <a href="#" class="nav-logo"> <img src="cab.jpg" alt=""> 
 SwiftRide</a>
     <div class="nav-links">
       <a href="#" class="nav-link active" onclick="showPage('home')">Home</a>
+   
+    <a href="#" onclick="showPage('ride')">Ride</a>
+
       <a href="#" class="nav-link" onclick="showPage('login')">Login</a>
+
       <a href="#" class="nav-link" onclick="showPage('signup')">Sign Up</a>
        <button class="theme-toggle" onclick="toggleTheme()">💡</button>
     </div>
@@ -870,22 +998,33 @@ SwiftRide</a>
   <!-- Home Page -->
   <div id="home-page" class="page-container active">
     <div class="hero-section">
-      <h1>Premium Cab Services at Your Fingertips</h1>
+      <h2>Premium Cab Services at Your Fingertips</h2>
       <p>Experience the future of transportation with SwiftRide. Book a ride in seconds, travel in style, and arrive safely at your destination.</p>
       <!-- Section: Ride Booking -->
+ <!-- <section class="image">
+  <img src="kunalparaskar.jpg" alt="">
+ </section>       -->
 <section class="ride-booking">
   <h2>Book Your Ride</h2>
   <p>Enter your pickup and drop-off locations to get an instant fare estimate.</p>
 
   <div class="ride-form">
-    <div class="input-group">
-      <label for="pickup">Pickup location</label>
-      <input type="text" id="pickup" placeholder="Enter pickup location">
-    </div>
 
-    <div class="input-group">
-      <label for="dropoff">Dropoff location</label>
-      <input type="text" id="dropoff" placeholder="Enter dropoff location">
+    <!-- Pickup -->
+   <div class="location-input">
+  <span class="icon pickup-icon"></span>
+  <input type="text" id="pickup" placeholder="Pickup location">
+  <i class="fas fa-location-arrow map-icon"></i> <!-- Google Maps style icon -->
+</div>
+
+
+    <!-- Connector line -->
+    <div class="connector"></div>
+
+    <!-- Dropoff -->
+    <div class="location-input">
+      <span class="icon dropoff-icon"></span>
+      <input type="text" id="dropoff" placeholder="Dropoff location">
     </div>
 
     <button onclick="showPrice()">See prices</button>
@@ -893,6 +1032,8 @@ SwiftRide</a>
 
   <p id="price-output"></p>
 </section>
+
+
 
       
       <div class="hero-buttons">
@@ -928,6 +1069,43 @@ SwiftRide</a>
       </div>
     </div>
   </div>
+  <!-- ride section -->
+   <!-- Uber-style Ride Booking Section -->
+   <!-- Ride Page -->
+
+  <!-- Uber-style Ride Booking Section -->
+   <!-- Ride Page -->
+<div id="ride-page" class="page-container">
+  <!-- <h1>Book Your Ride</h1> -->
+  <div class="ride-container">
+    <div class="ride-form">
+      <!-- Pickup -->
+     <div class="location-input">
+  <span class="icon pickup-icon"></span>
+  <input type="text" id="pickup" placeholder="Pickup location">
+  <i class="fas fa-location-arrow map-icon"></i> <!-- Google Maps style icon -->
+</div>
+
+      <!-- Line -->
+      <div class="ride-line"></div>
+
+      <!-- Dropoff -->
+      <!-- Dropoff -->
+    <div class="location-input">
+      <span class="icon dropoff-icon"></span>
+      <input type="text" id="dropoff" placeholder="Dropoff location">
+    </div>
+
+      <button onclick="showPrice()">Check Price</button>
+      <p id="price-output"></p>
+    </div>
+  </div>
+  <div id="map"></div>
+
+</div>
+
+
+
 
   <!-- Login Page -->
   <div id="login-page" class="page-container">
@@ -1518,7 +1696,24 @@ if (signupFinal) {
     }
   });
 }
+// Initialize the map
+  function initMap() {
+    // Pune coordinates
+    const pune = { lat: 18.5204, lng: 73.8567 };
 
+    // Create map centered at Pune
+    const map = new google.maps.Map(document.getElementById("map"), {
+      zoom: 12,
+      center: pune,
+    });
+
+    // Add marker for Pune
+    new google.maps.Marker({
+      position: pune,
+      map: map,
+      title: "Pune City",
+    });
+  }
 
   </script>
 </body>

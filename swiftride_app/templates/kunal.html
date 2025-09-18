@@ -1,0 +1,29 @@
+ <!-- Ride Page -->
+<div id="ride-page" class="page-container">
+  <!-- <h1>Book Your Ride</h1> -->
+  <div class="ride-container">
+    <div class="ride-form">
+      <!-- Pickup -->
+      <div class="ride-input">
+        <div class="icon-circle">
+          <i class="fas fa-map-marker-alt"></i> <!-- Google Map style icon -->
+        </div>
+        <input type="text" id="pickup" placeholder="Enter Pickup Location">
+      </div>
+
+      <!-- Line -->
+      <div class="ride-line"></div>
+
+      <!-- Dropoff -->
+      <div class="ride-input">
+        <div class="icon-square"></div>
+        <input type="text" id="dropoff" placeholder="Enter Dropoff Location">
+      </div>
+
+      <button onclick="showPrice()">Check Price</button>
+      <p id="price-output"></p>
+    </div>
+  </div>
+</div>
+
+
