@@ -41,8 +41,8 @@ def signup():
         cursor = conn.cursor()
         sql = """
         INSERT INTO users
-        (firstName, lastName, email, phone, password, address, city, zipCode, preferredPayment)
-        VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)
+        (firstName, lastName, email, phone, password, address,state, city, zipCode, preferredPayment)
+        VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
         """
         values = (
             data.get("firstName"),
@@ -51,6 +51,7 @@ def signup():
             data.get("phone"),
             hashed_pw,
             data.get("address"),
+            data.get("state"),
             data.get("city"),
             data.get("zipCode"),
             data.get("preferredPayment")
@@ -96,7 +97,7 @@ def me():
     try:
         conn = get_db_connection()
         cursor = conn.cursor(dictionary=True)
-        cursor.execute("SELECT id, firstName, lastName, email, phone, address, city, zipCode, preferredPayment FROM users WHERE id=%s", (user_id,))
+        cursor.execute("SELECT id, firstName, lastName, email, phone, address, state, city, zipCode, preferredPayment FROM users WHERE id=%s", (user_id,))
         user = cursor.fetchone()
         cursor.close()
         conn.close()
@@ -119,12 +120,13 @@ def update_profile():
         cursor = conn.cursor()
         sql = """
         UPDATE users 
-        SET phone=%s, address=%s, city=%s, zipCode=%s, preferredPayment=%s
+        SET phone=%s, address=%s, state=%s, city=%s, zipCode=%s, preferredPayment=%s
         WHERE id=%s
         """
         values = (
             data.get("phone"),
             data.get("address"),
+            data.get("state"),
             data.get("city"),
             data.get("zipCode"),
             data.get("preferredPayment"),
@@ -170,7 +172,7 @@ def list_users():
     try:
         conn = get_db_connection()
         cursor = conn.cursor(dictionary=True)
-        cursor.execute("SELECT id, firstName, lastName, email, city, preferredPayment FROM users")
+        cursor.execute("SELECT id, firstName, lastName, email,state, city, preferredPayment FROM users")
         users = cursor.fetchall()
         cursor.close()
         conn.close()

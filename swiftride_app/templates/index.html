@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,9 +8,8 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
-<script async
-  src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY&callback=initMap">
-</script>
+  <script async src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY&callback=initMap">
+  </script>
 
 
 
@@ -40,48 +40,55 @@
       padding: 20px;
       position: relative;
       overflow-x: hidden;
-      padding-top: 72px; /* adjust if your navbar height is different */
-      
+      padding-top: 72px;
+      /* adjust if your navbar height is different */
+
     }
 
     /* Navigation */
     .navbar {
-     position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  z-index: 1000;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 15px 30px;
-  background: rgba(0,0,0,0.85);
-  transition: background 0.4s ease; /* smooth change */
-  /* remove rounding when fixed unless you want it */
-  border-radius: 0;
-  margin: 0;
-  box-sizing: border-box;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 1000;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 15px 30px;
+      background: rgba(0, 0, 0, 0.85);
+      transition: background 0.4s ease;
+      /* smooth change */
+      /* remove rounding when fixed unless you want it */
+      border-radius: 0;
+      margin: 0;
+      box-sizing: border-box;
     }
 
-  .nav-logo {
-     display: flex;               /* align image + text */
-  align-items: center;
-  gap: 8px;                    /* spacing between logo and text */
-  font-size: 1.8rem;
-  font-weight: bold;
-  color: var(--primary);
-  text-decoration: none;
+    .nav-logo {
+      display: flex;
+      /* align image + text */
+      align-items: center;
+      gap: 8px;
+      /* spacing between logo and text */
+      font-size: 1.8rem;
+      font-weight: bold;
+      color: var(--primary);
+      text-decoration: none;
     }
-  .logo-img {
-  width: 32px;   /* adjust size */
-  height: 32px;
-  object-fit: contain;
-  transition: transform 0.3s ease;
-  border-radius: 50px;
-}
-.nav-logo:hover .logo-img {
-  transform: scale(1.2) rotate(-10deg);
-}
+
+    .logo-img {
+      width: 32px;
+      /* adjust size */
+      height: 32px;
+      object-fit: contain;
+      transition: transform 0.3s ease;
+      border-radius: 50px;
+    }
+
+    .nav-logo:hover .logo-img {
+      transform: scale(1.2) rotate(-10deg);
+    }
 
     .nav-links {
       display: flex;
@@ -106,43 +113,46 @@
       background: var(--primary);
       color: var(--dark);
     }
+
     .navbar.scrolled {
-  background: rgba(255, 255, 255, 0.85); /* darker when scrolled */
-}
-.theme-toggle {
-  margin-left: 15px;
-  padding: 6px 10px;
-  border: none;
-  border-radius: 50%;
-  cursor: pointer;
-  font-size: 18px;
-  background: transparent;
-  transition: transform 0.3s ease, text-shadow 0.3s ease;
-}
+      background: rgba(132, 121, 121, 0.85);
+      /* darker when scrolled */
+    }
 
-.theme-toggle:hover {
-  transform: scale(1.2);
-}
+    .theme-toggle {
+      margin-left: 15px;
+      padding: 6px 10px;
+      border: none;
+      border-radius: 50%;
+      cursor: pointer;
+      font-size: 18px;
+      background: transparent;
+      transition: transform 0.3s ease, text-shadow 0.3s ease;
+    }
 
-/* Dark Mode */
-body.dark-mode {
-  background-color: #121212;
-  color: #f1f1f1;
-}
+    .theme-toggle:hover {
+      transform: scale(1.2);
+    }
 
-body.dark-mode .navbar {
-  background: rgba(255, 255, 255, 0.1);
-}
+    /* Dark Mode */
+    body.dark-mode {
+      background-color: #121212;
+      color: #f1f1f1;
+    }
 
-body.dark-mode .nav-link,
-body.dark-mode .nav-logo {
-  color: #fff;
-}
+    body.dark-mode .navbar {
+      background: rgba(255, 255, 255, 0.1);
+    }
 
-/* Glow effect for bulb in dark mode */
-body.dark-mode .theme-toggle {
-  text-shadow: 0 0 8px yellow, 0 0 15px gold;
-}
+    body.dark-mode .nav-link,
+    body.dark-mode .nav-logo {
+      color: #fff;
+    }
+
+    /* Glow effect for bulb in dark mode */
+    body.dark-mode .theme-toggle {
+      text-shadow: 0 0 8px yellow, 0 0 15px gold;
+    }
 
 
     /* Page container */
@@ -243,12 +253,15 @@ body.dark-mode .theme-toggle {
         transform: translateY(100vh) rotate(0deg);
         opacity: 0;
       }
+
       10% {
         opacity: 1;
       }
+
       90% {
         opacity: 1;
       }
+
       100% {
         transform: translateY(-100px) rotate(360deg);
         opacity: 0;
@@ -261,6 +274,7 @@ body.dark-mode .theme-toggle {
       max-width: 1100px;
       width: 100%;
       background: #fff;
+      
       border-radius: 16px;
       overflow: hidden;
       box-shadow: 0 15px 30px rgba(0, 0, 0, 0.3);
@@ -270,7 +284,7 @@ body.dark-mode .theme-toggle {
     .brand-section {
       flex: 1;
       background: linear-gradient(to bottom right, var(--secondary), var(--accent));
-      color: white;
+      color: rgb(255, 255, 255);
       padding: 40px;
       display: flex;
       flex-direction: column;
@@ -287,7 +301,7 @@ body.dark-mode .theme-toggle {
       left: -50%;
       width: 200%;
       height: 200%;
-      background: radial-gradient(circle, rgba(255, 204, 0, 0.1) 0%, transparent 70%);
+      /* background: radial-gradient(circle, rgba(255, 204, 0, 0.1) 0%, transparent 70%); */
       transform: rotate(30deg);
     }
 
@@ -375,7 +389,8 @@ body.dark-mode .theme-toggle {
       left: 0;
       right: 0;
       height: 2px;
-      background: #ddd;
+      /* background: #ddd; */
+      background: red;
       transform: translateY(-50%);
       z-index: 1;
     }
@@ -384,7 +399,7 @@ body.dark-mode .theme-toggle {
       width: 30px;
       height: 30px;
       border-radius: 50%;
-      background: white;
+      background: rgb(255, 255, 255);
       border: 2px solid #ddd;
       display: flex;
       align-items: center;
@@ -417,8 +432,15 @@ body.dark-mode .theme-toggle {
     }
 
     @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(10px); }
-      to { opacity: 1; transform: translateY(0); }
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
     }
 
     .input-row {
@@ -437,6 +459,7 @@ body.dark-mode .theme-toggle {
       font-weight: 600;
       margin-bottom: 8px;
       color: var(--dark);
+      /* color: red; */
       font-size: 0.95rem;
     }
 
@@ -456,7 +479,8 @@ body.dark-mode .theme-toggle {
       margin-right: 10px;
     }
 
-    .input-field input, .input-field select {
+    .input-field input,
+    .input-field select {
       flex: 1;
       border: none;
       outline: none;
@@ -515,6 +539,7 @@ body.dark-mode .theme-toggle {
 
     .btn-primary:hover {
       background: #e6b800;
+    
       transform: translateY(-2px);
       box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
     }
@@ -655,94 +680,95 @@ body.dark-mode .theme-toggle {
     .social-btn.apple i {
       color: #000;
     }
+
     /* Footer */
-.footer {
-  background: #111;
-  color: #fff;
-  padding: 50px 20px 20px;
-  font-family: 'Arial', sans-serif;
-}
+    .footer {
+      background: #111;
+      color: #fff;
+      padding: 50px 20px 20px;
+      font-family: 'Arial', sans-serif;
+    }
 
-.footer-container {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 40px;
-  max-width: 1200px;
-  margin: auto;
-}
+    .footer-container {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 40px;
+      max-width: 1200px;
+      margin: auto;
+    }
 
-.footer-logo {
-  width: 120px;
-  margin-bottom: 10px;
-}
+    .footer-logo {
+      width: 120px;
+      margin-bottom: 10px;
+    }
 
-.footer-brand p {
-  font-size: 14px;
-  line-height: 1.6;
-  color: #bbb;
-}
+    .footer-brand p {
+      font-size: 14px;
+      line-height: 1.6;
+      color: #bbb;
+    }
 
-.footer-links h3,
-.footer-social h3 {
-  font-size: 16px;
-  margin-bottom: 10px;
-}
+    .footer-links h3,
+    .footer-social h3 {
+      font-size: 16px;
+      margin-bottom: 10px;
+    }
 
-.footer-links ul {
-  list-style: none;
-  padding: 0;
-}
+    .footer-links ul {
+      list-style: none;
+      padding: 0;
+    }
 
-.footer-links ul li {
-  margin-bottom: 8px;
-}
+    .footer-links ul li {
+      margin-bottom: 8px;
+    }
 
-.footer-links ul li a {
-  text-decoration: none;
-  color: #bbb;
-  font-size: 14px;
-  transition: 0.3s;
-}
+    .footer-links ul li a {
+      text-decoration: none;
+      color: #bbb;
+      font-size: 14px;
+      transition: 0.3s;
+    }
 
-.footer-links ul li a:hover {
-  color: #fff;
-}
+    .footer-links ul li a:hover {
+      color: #fff;
+    }
 
-.social-icons a {
-  color: #bbb;
-  margin-right: 15px;
-  font-size: 18px;
-  transition: 0.3s;
-}
+    .social-icons a {
+      color: #bbb;
+      margin-right: 15px;
+      font-size: 18px;
+      transition: 0.3s;
+    }
 
-.social-icons a:hover {
-  color: #fff;
-}
+    .social-icons a:hover {
+      color: #fff;
+    }
 
-.app-buttons img {
-  width: 140px;
-  margin: 10px 0;
-  display: block;
-}
+    .app-buttons img {
+      width: 140px;
+      margin: 10px 0;
+      display: block;
+    }
 
-.footer-bottom {
-  text-align: center;
-  border-top: 1px solid #333;
-  margin-top: 30px;
-  padding-top: 15px;
-  font-size: 13px;
-  color: #aaa;
-}
+    .footer-bottom {
+      text-align: center;
+      border-top: 1px solid #333;
+      margin-top: 30px;
+      padding-top: 15px;
+      font-size: 13px;
+      color: #aaa;
+    }
 
-.footer-bottom a {
-  color: #bbb;
-  margin-left: 5px;
-  transition: 0.3s;
-}
+    .footer-bottom a {
+      color: #bbb;
+      margin-left: 5px;
+      transition: 0.3s;
+    }
 
-.footer-bottom a:hover {
-  color: #fff;
-}
+    .footer-bottom a:hover {
+      color: #fff;
+    }
 
 
     /* Responsive design */
@@ -751,16 +777,16 @@ body.dark-mode .theme-toggle {
         flex-direction: column;
         max-height: 95vh;
       }
-      
+
       .brand-section {
         padding: 30px;
       }
-      
+
       .form-section {
         padding: 30px;
         overflow-y: auto;
       }
-      
+
       .input-row {
         flex-direction: column;
         gap: 0;
@@ -780,190 +806,197 @@ body.dark-mode .theme-toggle {
         align-items: center;
       }
     }
- /* Container */
-/* Glass style container */
- /* Container */
-.ride-booking {
-  margin-top: 30px;
-  padding: 25px;
-  background: rgba(20, 18, 18, 0.16); 
-  backdrop-filter: blur(2px);
-  border-radius: 15px;
-  max-width: 420px;
-  box-shadow: 0 8px 25px rgba(0,0,0,0.2);
-  transition: transform 0.3s;
-}
 
-.ride-booking:hover {
-  transform: translateY(-5px);
-}
+    /* Container */
+    /* Glass style container */
+    /* Container */
+    .ride-booking {
+      margin-top: 30px;
+      padding: 25px;
+      background: rgba(20, 18, 18, 0.16);
+      backdrop-filter: blur(2px);
+      border-radius: 15px;
+      max-width: 420px;
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+      transition: transform 0.3s;
+    }
 
-.ride-booking h2 {
-  font-size: 1.5rem;
-  margin-bottom: 10px;
-  color: white;
-}
+    .ride-booking:hover {
+      transform: translateY(-5px);
+    }
 
-.ride-form {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
+    .ride-booking h2 {
+      font-size: 1.5rem;
+      margin-bottom: 10px;
+      color: white;
+    }
 
-/* Input + icon row */
-.location-input {
-  display: flex;
-  align-items: center;
-  background: #f5f5f5;
-  border-radius: 10px;
-  padding: 8px 12px;
-  position: relative;
-}
+    .ride-form {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
 
-/* Input field */
-.location-input input {
-  flex: 1;
-  border: none;
-  outline: none;
-  padding: 10px;
-  border-radius: 6px;
-  background: transparent;
-  font-size: 0.95rem;
-}
+    /* Input + icon row */
+    .location-input {
+      display: flex;
+      align-items: center;
+      background: #f5f5f5;
+      border-radius: 10px;
+      padding: 8px 12px;
+      position: relative;
+    }
 
-/* Circle (pickup) */
-.icon.pickup-icon {
-  width: 14px;
-  height: 14px;
-  background: black;
-  border-radius: 50%;
-  margin-right: 10px;
-}
+    /* Input field */
+    .location-input input {
+      flex: 1;
+      border: none;
+      outline: none;
+      padding: 10px;
+      border-radius: 6px;
+      background: transparent;
+      font-size: 0.95rem;
+    }
 
-/* Square (dropoff) */
-.icon.dropoff-icon {
-  width: 14px;
-  height: 14px;
-  background: black;
-  border-radius: 2px;
-  margin-right: 10px;
-}
+    /* Circle (pickup) */
+    .icon.pickup-icon {
+      width: 14px;
+      height: 14px;
+      background: black;
+      border-radius: 50%;
+      margin-right: 10px;
+    }
 
-/* Connector line */
-.connector {
-  height: 20px;
-  width: 2px;
-  background: black;
-  margin: 0 auto;
-}
+    /* Square (dropoff) */
+    .icon.dropoff-icon {
+      width: 14px;
+      height: 14px;
+      background: black;
+      border-radius: 2px;
+      margin-right: 10px;
+    }
 
-/* Map sign (pickup side) */
-.map-icon {
-  margin-left: 8px;
-  font-size: 1rem;
-  cursor: pointer;
-}
+    /* Connector line */
+    .connector {
+      height: 20px;
+      width: 2px;
+      background: black;
+      margin: 0 auto;
+    }
 
-/* Button */
-.ride-form button {
-  padding: 12px;
-  background: black;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  font-size: 1rem;
-  cursor: pointer;
-  transition: background 0.3s;
-}
+    /* Map sign (pickup side) */
+    .map-icon {
+      margin-left: 8px;
+      font-size: 1rem;
+      cursor: pointer;
+    }
 
-.ride-form button:hover {
-  background: #181818;
-}
-.map-icon {
-  margin-left: 10px;
-  font-size: 18px;
-  color: #e74c3c;  /* Google Maps red */
-  cursor: pointer;
-  transition: transform 0.2s;
-}
+    /* Button */
+    .ride-form button {
+      padding: 12px;
+      background: black;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
 
-.map-icon:hover {
-  transform: scale(1.2);
-  color: #c0392b; /* darker red on hover */
-}
+    .ride-form button:hover {
+      background: #181818;
+    }
 
+    .map-icon {
+      margin-left: 10px;
+      font-size: 18px;
+      color: #e74c3c;
+      /* Google Maps red */
+      cursor: pointer;
+      transition: transform 0.2s;
+    }
 
-/* Price result */
-#price-output {
-  margin-top: 15px;
-  font-weight: bold;
-  color: green;
-}
-/* ride page css */
-.ride-container {
-  display: flex;
-  justify-content: flex-start; /* push content to the left */
-  align-items: center;        /* vertical center */
-  min-height: 60vh;           /* takes 60% of viewport height */
-  padding-left: 50px;         /* optional spacing from edge */
-  /* background: #f4f4f4;    */
-
-}
-
-.ride-form {
-  background: #fff;
-  padding: 25px;
-
-  border-radius: 15px;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-  width: 350px;
-}
-
-.ride-input {
-  display: flex;
-  align-items: center;
-  margin-bottom: 20px;
-}
-
-.icon-circle {
-  width: 20px;
-  height: 20px;
-  background: #007bff;
-  border-radius: 50%;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  color: white;
-  margin-right: 10px;
-}
-
-.icon-square {
-  width: 20px;
-  height: 20px;
-  background: #ff0000;
-  margin-right: 10px;
-}
-
-.ride-line {
-  height: 30px;
-  width: 2px;
-  background: #aaa;
-  margin: 0 0 20px 9px;
-}
-/* map */
-#map {
-  width: 600px;
-  height: 400px;
-  margin-left: 30px;
-  border-radius: 15px;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-}
+    .map-icon:hover {
+      transform: scale(1.2);
+      color: #c0392b;
+      /* darker red on hover */
+    }
 
 
+    /* Price result */
+    #price-output {
+      margin-top: 15px;
+      font-weight: bold;
+      color: green;
+    }
 
+    /* ride page css */
+    .ride-container {
+      display: flex;
+      justify-content: flex-start;
+      /* push content to the left */
+      align-items: center;
+      /* vertical center */
+      min-height: 60vh;
+      /* takes 60% of viewport height */
+      padding-left: 50px;
+      /* optional spacing from edge */
+      /* background: #f4f4f4;    */
 
+    }
+
+    .ride-form {
+      background: #fff;
+      padding: 25px;
+
+      border-radius: 15px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+      width: 350px;
+    }
+
+    .ride-input {
+      display: flex;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .icon-circle {
+      width: 20px;
+      height: 20px;
+      background: #007bff;
+      border-radius: 50%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      color: white;
+      margin-right: 10px;
+    }
+
+    .icon-square {
+      width: 20px;
+      height: 20px;
+      background: #ff0000;
+      margin-right: 10px;
+    }
+
+    .ride-line {
+      height: 30px;
+      width: 2px;
+      background: #aaa;
+      margin: 0 0 20px 9px;
+    }
+
+    /* map */
+    #map {
+      width: 600px;
+      height: 400px;
+      margin-left: 30px;
+      border-radius: 15px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    }
   </style>
 </head>
+
 <body>
   <!-- Animated background elements -->
   <div class="bg-elements">
@@ -980,62 +1013,63 @@ body.dark-mode .theme-toggle {
 
   <!-- Navigation -->
   <nav class="navbar">
-  <a href="#" class="nav-logo"> <img src="cab.jpg" alt=""> 
-SwiftRide</a>
+    <a href="#" class="nav-logo"> <img src="cab.jpg" alt="">
+      SwiftRide</a>
     <div class="nav-links">
       <a href="#" class="nav-link active" onclick="showPage('home')">Home</a>
-   
-    <a href="#" onclick="showPage('ride')">Ride</a>
+
+      <a href="#" onclick="showPage('ride')">Ride</a>
 
       <a href="#" class="nav-link" onclick="showPage('login')">Login</a>
 
       <a href="#" class="nav-link" onclick="showPage('signup')">Sign Up</a>
-       <button class="theme-toggle" onclick="toggleTheme()">💡</button>
+      <button class="theme-toggle" onclick="toggleTheme()">💡</button>
     </div>
-   
+
   </nav>
 
   <!-- Home Page -->
   <div id="home-page" class="page-container active">
     <div class="hero-section">
       <h2>Premium Cab Services at Your Fingertips</h2>
-      <p>Experience the future of transportation with SwiftRide. Book a ride in seconds, travel in style, and arrive safely at your destination.</p>
+      <p>Experience the future of transportation with SwiftRide. Book a ride in seconds, travel in style, and arrive
+        safely at your destination.</p>
       <!-- Section: Ride Booking -->
- <!-- <section class="image">
+      <!-- <section class="image">
   <img src="kunalparaskar.jpg" alt="">
  </section>       -->
-<section class="ride-booking">
-  <h2>Book Your Ride</h2>
-  <p>Enter your pickup and drop-off locations to get an instant fare estimate.</p>
+      <section class="ride-booking">
+        <h2>Book Your Ride</h2>
+        <p>Enter your pickup and drop-off locations to get an instant fare estimate.</p>
 
-  <div class="ride-form">
+        <div class="ride-form">
 
-    <!-- Pickup -->
-   <div class="location-input">
-  <span class="icon pickup-icon"></span>
-  <input type="text" id="pickup" placeholder="Pickup location">
-  <i class="fas fa-location-arrow map-icon"></i> <!-- Google Maps style icon -->
-</div>
-
-
-    <!-- Connector line -->
-    <div class="connector"></div>
-
-    <!-- Dropoff -->
-    <div class="location-input">
-      <span class="icon dropoff-icon"></span>
-      <input type="text" id="dropoff" placeholder="Dropoff location">
-    </div>
-
-    <button onclick="showPrice()">See prices</button>
-  </div>
-
-  <p id="price-output"></p>
-</section>
+          <!-- Pickup -->
+          <div class="location-input">
+            <span class="icon pickup-icon"></span>
+            <input type="text" id="pickup" placeholder="Pickup location">
+            <i class="fas fa-location-arrow map-icon"></i> <!-- Google Maps style icon -->
+          </div>
 
 
+          <!-- Connector line -->
+          <div class="connector"></div>
 
-      
+          <!-- Dropoff -->
+          <div class="location-input">
+            <span class="icon dropoff-icon"></span>
+            <input type="text" id="dropoff" placeholder="Dropoff location">
+          </div>
+
+          <button onclick="showPrice()">See prices</button>
+        </div>
+
+        <p id="price-output"></p>
+      </section>
+
+
+
+
       <div class="hero-buttons">
         <button class="btn btn-primary" onclick="showPage('signup')">
           <i class="fas fa-user-plus"></i> Create Account
@@ -1070,39 +1104,39 @@ SwiftRide</a>
     </div>
   </div>
   <!-- ride section -->
-   <!-- Uber-style Ride Booking Section -->
-   <!-- Ride Page -->
+  <!-- Uber-style Ride Booking Section -->
+  <!-- Ride Page -->
 
   <!-- Uber-style Ride Booking Section -->
-   <!-- Ride Page -->
-<div id="ride-page" class="page-container">
-  <!-- <h1>Book Your Ride</h1> -->
-  <div class="ride-container">
-    <div class="ride-form">
-      <!-- Pickup -->
-     <div class="location-input">
-  <span class="icon pickup-icon"></span>
-  <input type="text" id="pickup" placeholder="Pickup location">
-  <i class="fas fa-location-arrow map-icon"></i> <!-- Google Maps style icon -->
-</div>
+  <!-- Ride Page -->
+  <div id="ride-page" class="page-container">
+    <!-- <h1>Book Your Ride</h1> -->
+    <div class="ride-container">
+      <div class="ride-form">
+        <!-- Pickup -->
+        <div class="location-input">
+          <span class="icon pickup-icon"></span>
+          <input type="text" id="pickup" placeholder="Pickup location">
+          <i class="fas fa-location-arrow map-icon"></i> <!-- Google Maps style icon -->
+        </div>
 
-      <!-- Line -->
-      <div class="ride-line"></div>
+        <!-- Line -->
+        <div class="ride-line"></div>
 
-      <!-- Dropoff -->
-      <!-- Dropoff -->
-    <div class="location-input">
-      <span class="icon dropoff-icon"></span>
-      <input type="text" id="dropoff" placeholder="Dropoff location">
+        <!-- Dropoff -->
+        <!-- Dropoff -->
+        <div class="location-input">
+          <span class="icon dropoff-icon"></span>
+          <input type="text" id="dropoff" placeholder="Dropoff location">
+        </div>
+
+        <button onclick="showPrice()">Check Price</button>
+        <p id="price-output"></p>
+      </div>
     </div>
+    <div id="map"></div>
 
-      <button onclick="showPrice()">Check Price</button>
-      <p id="price-output"></p>
-    </div>
   </div>
-  <div id="map"></div>
-
-</div>
 
 
 
@@ -1116,7 +1150,7 @@ SwiftRide</a>
         <div class="brand-content">
           <h2>Welcome Back!</h2>
           <p>Sign in to access your account and book your next ride</p>
-          
+
           <ul class="features">
             <li><i class="fas fa-check-circle"></i> Quick and easy access</li>
             <li><i class="fas fa-check-circle"></i> Manage your rides</li>
@@ -1195,7 +1229,7 @@ SwiftRide</a>
         <div class="brand-content">
           <h2>Join Thousands of Riders</h2>
           <p>Create your account and enjoy premium cab services</p>
-          
+
           <ul class="features">
             <li><i class="fas fa-check-circle"></i> Quick and easy registration</li>
             <li><i class="fas fa-check-circle"></i> Exclusive member discounts</li>
@@ -1253,6 +1287,7 @@ SwiftRide</a>
               <i class="fas fa-phone"></i>
               <input type="tel" id="phone" placeholder="Enter your phone number" required>
             </div>
+              <small id="phoneError" style="display:none; color:red;">Phone number must be 10 digits only</small>
           </div>
 
           <div class="btn-group">
@@ -1266,21 +1301,25 @@ SwiftRide</a>
             <label for="password">Password</label>
             <div class="input-field">
               <i class="fas fa-lock"></i>
-              <input type="password" id="password" placeholder="Create a strong password" required oninput="checkPasswordStrength()">
+              <input type="password" id="password" placeholder="Create a strong password" required
+                oninput="checkPasswordStrength()">
             </div>
             <div class="password-strength">
               <div class="strength-meter" id="passwordStrength"></div>
             </div>
-            <small id="passwordHelp" style="display:block; margin-top:5px; color:var(--gray);">Use at least 8 characters with a mix of letters, numbers & symbols</small>
+            <small id="passwordHelp" style="display:block; margin-top:5px; color:var(--gray);">Use at least 8 characters
+              with a mix of letters, numbers & symbols</small>
           </div>
 
           <div class="input-group">
             <label for="confirmPassword">Confirm Password</label>
             <div class="input-field">
               <i class="fas fa-lock"></i>
-              <input type="password" id="confirmPassword" placeholder="Confirm your password" required oninput="validatePassword()">
+              <input type="password" id="confirmPassword" placeholder="Confirm your password" required
+                oninput="validatePassword()">
             </div>
-            <small id="passwordMatch" style="display:block; margin-top:5px; color:var(--danger); display:none;">Passwords do not match</small>
+            <small id="passwordMatch"
+              style="display:block; margin-top:5px; color:var(--danger); display:none;">Passwords do not match</small>
           </div>
 
           <div class="btn-group">
@@ -1298,14 +1337,64 @@ SwiftRide</a>
               <input type="text" id="address" placeholder="Enter your home address">
             </div>
           </div>
+          <div class="input-group">
+            <label for="state">State</label>
+            <div class="input-field">
+              <i class="fas fa-map-marker-alt"></i>
+              <select id="state" required>
+                <option value="">Select your state</option>
+                <option value="Andhra Pradesh">Andhra Pradesh</option>
+                <option value="Arunachal Pradesh">Arunachal Pradesh</option>
+                <option value="Assam">Assam</option>
+                <option value="Bihar">Bihar</option>
+                <option value="Chhattisgarh">Chhattisgarh</option>
+                <option value="Delhi">Delhi</option>
+                <option value="Goa">Goa</option>
+                <option value="Gujarat">Gujarat</option>
+                <option value="Haryana">Haryana</option>
+                <option value="Himachal Pradesh">Himachal Pradesh</option>
+                <option value="Jharkhand">Jharkhand</option>
+                <option value="Karnataka">Karnataka</option>
+                <option value="Kerala">Kerala</option>
+                <option value="Madhya Pradesh">Madhya Pradesh</option>
+                <option value="Maharashtra">Maharashtra</option>
+                <option value="Manipur">Manipur</option>
+                <option value="Meghalaya">Meghalaya</option>
+                <option value="Mizoram">Mizoram</option>
+                <option value="Nagaland">Nagaland</option>
+                <option value="Odisha">Odisha</option>
+                <option value="Punjab">Punjab</option>
+                <option value="Rajasthan">Rajasthan</option>
+                <option value="Sikkim">Sikkim</option>
+                <option value="Tamil Nadu">Tamil Nadu</option>
+                <option value="Telangana">Telangana</option>
+                <option value="Tripura">Tripura</option>
+                <option value="Uttar Pradesh">Uttar Pradesh</option>
+                <option value="Uttarakhand">Uttarakhand</option>
+                <option value="West Bengal">West Bengal</option>
+              </select>
+            </div>
+          </div>
 
+          <!-- <div class="input-group">
+  <label for="city">City</label>
+  <div class="input-field">
+    <i class="fas fa-city"></i>
+    <select id="city" required>
+      <option value="">Select your city</option>
+    </select>
+  </div>
+</div> -->
           <div class="input-row">
-            <div class="input-group">
-              <label for="city">City</label>
+            <div class="input-group"> <label for="city">City</label>
               <div class="input-field">
-                <i class="fas fa-city"></i>
-                <input type="text" id="city" placeholder="Enter your city">
-              </div>
+                 <i class="fas fa-city"></i>
+                  <!-- <input type="text" id="city"
+                  placeholder="Enter your city"> -->
+                  <select  id="city" required>
+                    <option value="">select your city</option>
+                  </select>
+                 </div>
             </div>
             <div class="input-group">
               <label for="zipCode">ZIP Code</label>
@@ -1325,6 +1414,7 @@ SwiftRide</a>
                 <option value="credit_card">Credit Card</option>
                 <option value="debit_card">Debit Card</option>
                 <option value="paypal">PayPal</option>
+                <option value="upi">UPI</option>
                 <option value="cash">Cash</option>
               </select>
             </div>
@@ -1332,7 +1422,8 @@ SwiftRide</a>
 
           <div class="terms">
             <input type="checkbox" id="terms" required>
-            <label for="terms">I agree to the <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a></label>
+            <label for="terms">I agree to the <a href="#">Terms of Service</a> and <a href="#">Privacy
+                Policy</a></label>
           </div>
 
           <div class="terms">
@@ -1353,99 +1444,101 @@ SwiftRide</a>
     </div>
   </div>
   <!-- Footer -->
-<footer class="footer">
-  <div class="footer-container">
-    
-    <!-- Brand Section -->
-    <div class="footer-brand">
-      <img src="cab.jpg" alt="SwiftRide Logo" class="footer-logo">
-      <p>SwiftRide – Premium Cab Services for a safer, faster and more comfortable journey.</p>
-    </div>
+  <footer class="footer">
+    <div class="footer-container">
 
-    <!-- Quick Links -->
-    <div class="footer-links">
-      <h3>Company</h3>
-      <ul>
-        <li><a href="#">About Us</a></li>
-        <li><a href="#">Careers</a></li>
-        <li><a href="#">Blog</a></li>
-        <li><a href="#">Press</a></li>
-      </ul>
-    </div>
-
-    <div class="footer-links">
-      <h3>Support</h3>
-      <ul>
-        <li><a href="#">Help Center</a></li>
-        <li><a href="#">Safety</a></li>
-        <li><a href="#">Contact Us</a></li>
-        <li><a href="#">COVID-19 Updates</a></li>
-      </ul>
-    </div>
-
-    <!-- Social & Apps -->
-    <div class="footer-social">
-      <h3>Follow Us</h3>
-      <div class="social-icons">
-        <a href="#"><i class="fab fa-facebook-f"></i></a>
-        <a href="#"><i class="fab fa-twitter"></i></a>
-        <a href="#"><i class="fab fa-instagram"></i></a>
-        <a href="#"><i class="fab fa-linkedin-in"></i></a>
+      <!-- Brand Section -->
+      <div class="footer-brand">
+        <img src="cab.jpg" alt="SwiftRide Logo" class="footer-logo">
+        <p>SwiftRide – Premium Cab Services for a safer, faster and more comfortable journey.</p>
       </div>
-      <h3>Get the App</h3>
-      <div class="app-buttons">
-        <a href="#"><img src="https://upload.wikimedia.org/wikipedia/commons/7/78/Google_Play_Store_badge_EN.svg" alt="Google Play"></a>
-        <a href="#"><img src="https://developer.apple.com/assets/elements/badges/download-on-the-app-store.svg" alt="App Store"></a>
+
+      <!-- Quick Links -->
+      <div class="footer-links">
+        <h3>Company</h3>
+        <ul>
+          <li><a href="#">About Us</a></li>
+          <li><a href="#">Careers</a></li>
+          <li><a href="#">Blog</a></li>
+          <li><a href="#">Press</a></li>
+        </ul>
+      </div>
+
+      <div class="footer-links">
+        <h3>Support</h3>
+        <ul>
+          <li><a href="#">Help Center</a></li>
+          <li><a href="#">Safety</a></li>
+          <li><a href="#">Contact Us</a></li>
+          <li><a href="#">COVID-19 Updates</a></li>
+        </ul>
+      </div>
+
+      <!-- Social & Apps -->
+      <div class="footer-social">
+        <h3>Follow Us</h3>
+        <div class="social-icons">
+          <a href="#"><i class="fab fa-facebook-f"></i></a>
+          <a href="#"><i class="fab fa-twitter"></i></a>
+          <a href="#"><i class="fab fa-instagram"></i></a>
+          <a href="#"><i class="fab fa-linkedin-in"></i></a>
+        </div>
+        <h3>Get the App</h3>
+        <div class="app-buttons">
+          <a href="#"><img src="https://upload.wikimedia.org/wikipedia/commons/7/78/Google_Play_Store_badge_EN.svg"
+              alt="Google Play"></a>
+          <a href="#"><img src="https://developer.apple.com/assets/elements/badges/download-on-the-app-store.svg"
+              alt="App Store"></a>
+        </div>
       </div>
     </div>
-  </div>
 
-  <!-- Bottom -->
-  <div class="footer-bottom">
-    <p>© 2025 SwiftRide. All rights reserved. | <a href="#">Privacy Policy</a> | <a href="#">Terms of Service</a></p>
-  </div>
-</footer>
+    <!-- Bottom -->
+    <div class="footer-bottom">
+      <p>© 2025 SwiftRide. All rights reserved. | <a href="#">Privacy Policy</a> | <a href="#">Terms of Service</a></p>
+    </div>
+  </footer>
 
 
   <script>
-      window.addEventListener("scroll", function() {
-    const navbar = document.querySelector(".navbar");
-    if (window.scrollY > 50) { // 50px down from top
-      navbar.classList.add("scrolled");
-    } else {
-      navbar.classList.remove("scrolled");
-    }
-  });
+    window.addEventListener("scroll", function () {
+      const navbar = document.querySelector(".navbar");
+      if (window.scrollY > 50) { // 50px down from top
+        navbar.classList.add("scrolled");
+      } else {
+        navbar.classList.remove("scrolled");
+      }
+    });
     function toggleTheme() {
-    document.body.classList.toggle("dark-mode");
-    const btn = document.querySelector(".theme-toggle");
+      document.body.classList.toggle("dark-mode");
+      const btn = document.querySelector(".theme-toggle");
 
-    if (document.body.classList.contains("dark-mode")) {
-      btn.textContent = "💡"; // glowing bulb in dark mode
-    } else {
-      btn.textContent = "🔆"; // sun/light symbol in light mode
+      if (document.body.classList.contains("dark-mode")) {
+        btn.textContent = "💡"; // glowing bulb in dark mode
+      } else {
+        btn.textContent = "🔆"; // sun/light symbol in light mode
+      }
     }
-  }
     // Page navigation
     function showPage(pageId) {
       // Hide all pages
       document.querySelectorAll('.page-container').forEach(page => {
         page.classList.remove('active');
       });
-      
+
       // Show the selected page
       document.getElementById(pageId + '-page').classList.add('active');
-      
+
       // Update navigation
       document.querySelectorAll('.nav-link').forEach(link => {
         link.classList.remove('active');
       });
-      
+
       // Find and activate the current nav link
       const activeLink = Array.from(document.querySelectorAll('.nav-link')).find(link => {
         return link.textContent.toLowerCase().includes(pageId);
       });
-      
+
       if (activeLink) {
         activeLink.classList.add('active');
       }
@@ -1457,10 +1550,10 @@ SwiftRide</a>
       document.querySelectorAll('.form-step').forEach(step => {
         step.classList.remove('active');
       });
-      
+
       // Show the selected step
       document.getElementById('step' + stepNumber).classList.add('active');
-      
+
       // Update progress steps
       document.querySelectorAll('.progress-step').forEach((step, index) => {
         if (index + 1 < stepNumber) {
@@ -1480,38 +1573,38 @@ SwiftRide</a>
       const password = document.getElementById('password').value;
       const strengthBar = document.getElementById('passwordStrength');
       const helpText = document.getElementById('passwordHelp');
-      
+
       // Reset
       strengthBar.style.width = '0';
       strengthBar.style.background = '#ddd';
-      
+
       if (password.length === 0) {
         helpText.textContent = 'Use at least 8 characters with a mix of letters, numbers & symbols';
         helpText.style.color = 'var(--gray)';
         return;
       }
-      
+
       // Check password strength
       let strength = 0;
-      
+
       // Length check
       if (password.length >= 8) strength += 20;
-      
+
       // Contains both lower and uppercase characters
       if (password.match(/([a-z].[A-Z])|([A-Z].[a-z])/)) strength += 20;
-      
+
       // Contains numbers
       if (password.match(/([0-9])/)) strength += 20;
-      
+
       // Contains special characters
       if (password.match(/([!,@,#,$,%,^,&,*,?,_,~])/)) strength += 20;
-      
+
       // Contains both letters and numbers
       if (password.match(/([a-zA-Z])/) && password.match(/([0-9])/)) strength += 20;
-      
+
       // Update UI
       strengthBar.style.width = strength + '%';
-      
+
       if (strength < 40) {
         strengthBar.style.background = '#dc3545';
         helpText.textContent = 'Weak password';
@@ -1532,7 +1625,7 @@ SwiftRide</a>
       const password = document.getElementById('password').value;
       const confirmPassword = document.getElementById('confirmPassword').value;
       const matchText = document.getElementById('passwordMatch');
-      
+
       if (confirmPassword.length > 0 && password !== confirmPassword) {
         matchText.style.display = 'block';
       } else {
@@ -1541,13 +1634,13 @@ SwiftRide</a>
     }
 
     // Form validation and submission
-    document.addEventListener('DOMContentLoaded', function() {
+    document.addEventListener('DOMContentLoaded', function () {
       const forms = document.querySelectorAll('form');
-      
+
       forms.forEach(form => {
-        form.addEventListener('submit', function(e) {
+        form.addEventListener('submit', function (e) {
           e.preventDefault();
-          
+
           if (form.id === 'login-form') {
             // Login form submission
             alert('Login successful! In a real application, this would authenticate your credentials.');
@@ -1559,27 +1652,27 @@ SwiftRide</a>
           }
         });
       });
-      
+
       // Add animation to the form elements
       const inputs = document.querySelectorAll('input');
       inputs.forEach(input => {
-        input.addEventListener('focus', function() {
+        input.addEventListener('focus', function () {
           this.parentElement.style.transform = 'scale(1.02)';
           this.parentElement.style.boxShadow = '0 5px 15px rgba(0, 0, 0, 0.1)';
         });
-        
-        input.addEventListener('blur', function() {
+
+        input.addEventListener('blur', function () {
           this.parentElement.style.transform = 'scale(1)';
           this.parentElement.style.boxShadow = 'none';
         });
       });
-      
+
       // Add floating animation to the main container
       const mainContainers = document.querySelectorAll('.main-container');
       mainContainers.forEach(container => {
         container.style.opacity = '0';
         container.style.transform = 'translateY(20px)';
-        
+
         setTimeout(() => {
           container.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
           container.style.opacity = '1';
@@ -1587,134 +1680,191 @@ SwiftRide</a>
         }, 100);
       });
     });
-document.addEventListener('DOMContentLoaded', function () {
-  // --- Input animations ---
-  const inputs = document.querySelectorAll('input');
-  inputs.forEach(input => {
-    input.addEventListener('focus', function () {
-      this.parentElement.style.transform = 'scale(1.02)';
-      this.parentElement.style.boxShadow = '0 5px 15px rgba(0, 0, 0, 0.1)';
-    });
-    input.addEventListener('blur', function () {
-      this.parentElement.style.transform = 'scale(1)';
-      this.parentElement.style.boxShadow = 'none';
-    });
-  });
+    document.addEventListener('DOMContentLoaded', function () {
+      // --- Input animations ---
+      const inputs = document.querySelectorAll('input');
+      inputs.forEach(input => {
+        input.addEventListener('focus', function () {
+          this.parentElement.style.transform = 'scale(1.02)';
+          this.parentElement.style.boxShadow = '0 5px 15px rgba(0, 0, 0, 0.1)';
+        });
+        input.addEventListener('blur', function () {
+          this.parentElement.style.transform = 'scale(1)';
+          this.parentElement.style.boxShadow = 'none';
+        });
+      });
 
-  // --- Floating animation for main containers ---
-  const mainContainers = document.querySelectorAll('.main-container');
-  mainContainers.forEach(container => {
-    container.style.opacity = '0';
-    container.style.transform = 'translateY(20px)';
-    setTimeout(() => {
-      container.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
-      container.style.opacity = '1';
-      container.style.transform = 'translateY(0)';
-    }, 100);
-  });
-});
+      // --- Floating animation for main containers ---
+      const mainContainers = document.querySelectorAll('.main-container');
+      mainContainers.forEach(container => {
+        container.style.opacity = '0';
+        container.style.transform = 'translateY(20px)';
+        setTimeout(() => {
+          container.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+          container.style.opacity = '1';
+          container.style.transform = 'translateY(0)';
+        }, 100);
+      });
+    });
 
 
     // --- Form submit handlers (calls Flask backend) ---
-  // LOGIN handler
-const loginForm = document.getElementById('login-form');
-if (loginForm) {
-  loginForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const email = document.getElementById('login-email').value.trim();
-    const password = document.getElementById('login-password').value;
+    // LOGIN handler
+    const loginForm = document.getElementById('login-form');
+    if (loginForm) {
+      loginForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const email = document.getElementById('login-email').value.trim();
+        const password = document.getElementById('login-password').value;
 
-    try {
-      const res = await fetch('/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password })
+        try {
+          const res = await fetch('/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password })
+          });
+          const json = await res.json();
+
+          if (res.status === 404) {
+            alert(json.error || 'This email is not registered. Please sign up.');
+            return;
+          }
+          if (res.status === 401) {
+            alert(json.error || 'Incorrect password. Try again.');
+            return;
+          }
+          if (!res.ok) {
+            alert(json.error || 'Server error. Try again later.');
+            return;
+          }
+
+          alert(json.message || 'Login successful!');
+          showPage('home'); // or redirect as needed
+        } catch (err) {
+          console.error(err);
+          alert('Network error. Is the backend running?');
+        }
       });
-      const json = await res.json();
+    }
 
-      if (res.status === 404) {
-        alert(json.error || 'This email is not registered. Please sign up.');
-        return;
-      }
-      if (res.status === 401) {
-        alert(json.error || 'Incorrect password. Try again.');
-        return;
-      }
-      if (!res.ok) {
-        alert(json.error || 'Server error. Try again later.');
-        return;
-      }
+    // SIGNUP handler (final step form id="step3")
+    const signupFinal = document.getElementById('step3');
+    if (signupFinal) {
+      signupFinal.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const userData = {
+          firstName: document.getElementById('firstName').value.trim(),
+          lastName: document.getElementById('lastName').value.trim(),
+          email: document.getElementById('email').value.trim(),
+          phone: document.getElementById('phone').value.trim(),
+          password: document.getElementById('password').value,
+          address: document.getElementById('address').value.trim(),
+          state: document.getElementById('state').value.trim(),
+          city: document.getElementById('city').value.trim(),
+          zipCode: document.getElementById('zipCode').value.trim(),
+          preferredPayment: document.getElementById('preferredPayment').value
+        };
+        // --- PHONE VALIDATION ---
+    if (!/^[0-9]{10}$/.test(userData.phone)) {
+      alert("Please enter a valid 10-digit phone number");
+      document.getElementById('phone').style.borderColor = 'red';
+      return; // stop submission if invalid
+    } else {
+      document.getElementById('phone').style.borderColor = 'green';
+    }
 
-      alert(json.message || 'Login successful!');
-      showPage('home'); // or redirect as needed
-    } catch (err) {
-      console.error(err);
-      alert('Network error. Is the backend running?');
+        try {
+          const res = await fetch('/signup', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(userData)
+          });
+          const json = await res.json();
+
+          if (res.status === 409) {
+            alert(json.error || 'Email already registered. Please login.');
+            return;
+          }
+          if (!res.ok) {
+            alert(json.error || 'Server error. Try again later.');
+            return;
+          }
+
+          alert(json.message || 'Account created!');
+          showPage('login');
+        } catch (err) {
+          console.error(err);
+          alert('Network error. Is the backend running?');
+        }
+      });
+    }
+    // --- Phone validation ---
+const phoneInput = document.getElementById("phone");
+const phoneError = document.getElementById("phoneError");
+
+if (phoneInput) {
+  phoneInput.addEventListener("input", function () {
+    // Only keep digits
+    phoneInput.value = phoneInput.value.replace(/\D/g, "");
+
+    const value = phoneInput.value;
+    const isValid = /^[0-9]{10}$/.test(value);
+
+    if (!isValid) {
+      phoneInput.style.borderColor = "red";
+      phoneError.style.display = "block";
+    } else {
+      phoneInput.style.borderColor = "green";
+      phoneError.style.display = "none";
     }
   });
 }
 
-// SIGNUP handler (final step form id="step3")
-const signupFinal = document.getElementById('step3');
-if (signupFinal) {
-  signupFinal.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const userData = {
-      firstName: document.getElementById('firstName').value.trim(),
-      lastName: document.getElementById('lastName').value.trim(),
-      email: document.getElementById('email').value.trim(),
-      phone: document.getElementById('phone').value.trim(),
-      password: document.getElementById('password').value,
-      address: document.getElementById('address').value.trim(),
-      city: document.getElementById('city').value.trim(),
-      zipCode: document.getElementById('zipCode').value.trim(),
-      preferredPayment: document.getElementById('preferredPayment').value
+    const stateCityMap = {
+      "Maharashtra": ["Mumbai", "Pune", "Nagpur", "Nashik", "Aurangabad"],
+      "Gujarat": ["Ahmedabad", "Surat", "Vadodara", "Rajkot", "Bhavnagar"],
+      "Karnataka": ["Bengaluru", "Mysuru", "Mangaluru", "Hubballi", "Belagavi"],
+      "Delhi": ["New Delhi", "Dwarka", "Rohini", "Saket", "Karol Bagh"]
+      // you can keep adding more states & cities here
     };
 
-    try {
-      const res = await fetch('/signup', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(userData)
+    document.getElementById("state").addEventListener("change", function () {
+      const state = this.value;
+      const citySelect = document.getElementById("city");
+
+      // clear old options
+      citySelect.innerHTML = '<option value="">Select your city</option>';
+
+      if (state && stateCityMap[state]) {
+        stateCityMap[state].forEach(city => {
+          const opt = document.createElement("option");
+          opt.value = city;
+          opt.textContent = city;
+          citySelect.appendChild(opt);
+        });
+      }
+    });
+
+    // Initialize the map
+    function initMap() {
+      // Pune coordinates
+      const pune = { lat: 18.5204, lng: 73.8567 };
+
+      // Create map centered at Pune
+      const map = new google.maps.Map(document.getElementById("map"), {
+        zoom: 12,
+        center: pune,
       });
-      const json = await res.json();
 
-      if (res.status === 409) {
-        alert(json.error || 'Email already registered. Please login.');
-        return;
-      }
-      if (!res.ok) {
-        alert(json.error || 'Server error. Try again later.');
-        return;
-      }
-
-      alert(json.message || 'Account created!');
-      showPage('login');
-    } catch (err) {
-      console.error(err);
-      alert('Network error. Is the backend running?');
+      // Add marker for Pune
+      new google.maps.Marker({
+        position: pune,
+        map: map,
+        title: "Pune City",
+      });
     }
-  });
-}
-// Initialize the map
-  function initMap() {
-    // Pune coordinates
-    const pune = { lat: 18.5204, lng: 73.8567 };
-
-    // Create map centered at Pune
-    const map = new google.maps.Map(document.getElementById("map"), {
-      zoom: 12,
-      center: pune,
-    });
-
-    // Add marker for Pune
-    new google.maps.Marker({
-      position: pune,
-      map: map,
-      title: "Pune City",
-    });
-  }
 
   </script>
 </body>
+
 </html>
