@@ -115,7 +115,7 @@
     }
 
     .navbar.scrolled {
-      background: rgba(132, 121, 121, 0.85);
+      background: rgba(255, 255, 255, 0.85);
       /* darker when scrolled */
     }
 
@@ -1291,7 +1291,8 @@
           </div>
 
           <div class="btn-group">
-            <button type="button" class="btn btn-primary" onclick="showStep(2)">Next</button>
+            <!-- <button type="button" class="btn btn-primary" onclick="showStep(2)">Next</button> -->
+            <button type="button" class="btn btn-primary" onclick="nextStep(1)">Next</button>
           </div>
         </form>
 
@@ -1323,8 +1324,10 @@
           </div>
 
           <div class="btn-group">
-            <button type="button" class="btn btn-outline" onclick="showStep(1)">Back</button>
-            <button type="button" class="btn btn-primary" onclick="showStep(3)">Next</button>
+            <!-- <button type="button" class="btn btn-outline" onclick="showStep(1)">Back</button>
+            <button type="button" class="btn btn-primary" onclick="showStep(3)">Next</button> -->
+             <button type="button" class="btn btn-outline" onclick="showStep(1)">Back</button>
+             <button type="button" class="btn btn-primary" onclick="nextStep(2)">Next</button>
           </div>
         </form>
 
@@ -1567,6 +1570,66 @@
         }
       });
     }
+  function nextStep(currentStep) {
+  let valid = true;
+
+  // Step 1: Personal Info
+  if (currentStep === 1) {
+    const firstName = document.getElementById('firstName').value.trim();
+    const lastName = document.getElementById('lastName').value.trim();
+    const email = document.getElementById('email').value.trim();
+    const phone = document.getElementById('phone').value.trim();
+
+    if (!firstName || !lastName || !email || !phone) {
+      alert('Please fill all required fields in Step 1');
+      valid = false;
+    } else if (!/^\d{10}$/.test(phone)) {
+      document.getElementById('phoneError').style.display = 'block';
+      valid = false;
+    } else {
+      document.getElementById('phoneError').style.display = 'none';
+    }
+  }
+
+  // Step 2: Password Info
+  if (currentStep === 2) {
+    const password = document.getElementById('password').value;
+    const confirmPassword = document.getElementById('confirmPassword').value;
+
+    if (!password || !confirmPassword) {
+      alert('Please fill all required fields in Step 2');
+      valid = false;
+    } else if (password !== confirmPassword) {
+      alert('Passwords do not match');
+      valid = false;
+    }
+  }
+
+  // Step 3: Additional Info
+  if (currentStep === 3) {
+    const address = document.getElementById('address').value.trim();
+    const state = document.getElementById('state').value.trim();
+    const city = document.getElementById('city').value.trim();
+    const zipCode = document.getElementById('zipCode').value.trim();
+    const terms = document.getElementById('terms').checked;
+
+    if (!address || !state || !city || !zipCode) {
+      alert('Please fill all required fields in Step 3');
+      valid = false;
+    } else if (!terms) {
+      alert('You must accept Terms of Service to continue');
+      valid = false;
+    }
+  }
+
+  if (valid) {
+    showStep(currentStep + 1);
+  }
+}
+
+
+// Similarly, your Back button can just call showStep(currentStep - 1)
+
 
     // Password strength indicator
     function checkPasswordStrength() {
