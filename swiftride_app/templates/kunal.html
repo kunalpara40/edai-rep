@@ -27,3 +27,1067 @@
 </div>
 
 
+
+ function showPage(page) {
+    // hide all sections
+    document.querySelectorAll(".page-container").forEach(sec => {
+      sec.style.display = "none";
+    });
+
+    // show selected section
+    const section = document.getElementById(page + "-page");
+    if (section) section.style.display = "block";
+
+    // footer toggle
+    const footer = document.getElementById("main-footer");
+    if (page === "ride") {
+      footer.style.display = "none";   // hide footer on Ride page
+    } else {
+      footer.style.display = "block";  // show footer on other pages
+    }
+  }
+
+  // default page = home
+  showPage("home");
+  
+// Password visibility toggle
+    function togglePassword(inputId, toggleIcon) {
+  const input = document.getElementById(inputId);
+  if (input.type === "password") {
+    input.type = "text";
+    toggleIcon.textContent = "🙈"; // password visible
+  } else {
+    input.type = "password";
+    toggleIcon.textContent = "👁️"; // password hidden
+  }
+}
+
+    window.addEventListener("scroll", function () {
+      const navbar = document.querySelector(".navbar");
+      if (window.scrollY > 50) { // 50px down from top
+        navbar.classList.add("scrolled");
+      } else {
+        navbar.classList.remove("scrolled");
+      }
+    });
+    function toggleTheme() {
+      document.body.classList.toggle("dark-mode");
+      const btn = document.querySelector(".theme-toggle");
+
+      if (document.body.classList.contains("dark-mode")) {
+        btn.textContent = "💡"; // glowing bulb in dark mode
+      } else {
+        btn.textContent = "🔆"; // sun/light symbol in light mode
+      }
+    }
+    // Page navigation
+    function showPage(pageId) {
+      // Hide all pages
+      document.querySelectorAll('.page-container').forEach(page => {
+        page.classList.remove('active');
+      });
+
+      // Show the selected page
+      document.getElementById(pageId + '-page').classList.add('active');
+
+      // Update navigation
+      document.querySelectorAll('.nav-link').forEach(link => {
+        link.classList.remove('active');
+      });
+
+      // Find and activate the current nav link
+      const activeLink = Array.from(document.querySelectorAll('.nav-link')).find(link => {
+        return link.textContent.toLowerCase().includes(pageId);
+      });
+
+      if (activeLink) {
+        activeLink.classList.add('active');
+      }
+    }
+
+    // Form step navigation
+    function showStep(stepNumber) {
+      // Hide all steps
+      document.querySelectorAll('.form-step').forEach(step => {
+        step.classList.remove('active');
+      });
+
+      // Show the selected step
+      document.getElementById('step' + stepNumber).classList.add('active');
+
+      // Update progress steps
+      document.querySelectorAll('.progress-step').forEach((step, index) => {
+        if (index + 1 < stepNumber) {
+          step.classList.add('completed');
+          step.classList.remove('active');
+        } else if (index + 1 === stepNumber) {
+          step.classList.add('active');
+          step.classList.remove('completed');
+        } else {
+          step.classList.remove('active', 'completed');
+        }
+      });
+    }
+  function nextStep(currentStep) {
+  let valid = true;
+
+  // Step 1: Personal Info
+  if (currentStep === 1) {
+    const firstName = document.getElementById('firstName').value.trim();
+    const lastName = document.getElementById('lastName').value.trim();
+    const email = document.getElementById('email').value.trim();
+    const phone = document.getElementById('phone').value.trim();
+
+    if (!firstName || !lastName || !email || !phone) {
+      alert('Please fill all required fields in Step 1');
+      valid = false;
+    } else if (!/^\d{10}$/.test(phone)) {
+      document.getElementById('phoneError').style.display = 'block';
+      valid = false;
+    } else {
+      document.getElementById('phoneError').style.display = 'none';
+    }
+  }
+
+  // Step 2: Password Info
+  if (currentStep === 2) {
+    const password = document.getElementById('password').value;
+    const confirmPassword = document.getElementById('confirmPassword').value;
+
+    if (!password || !confirmPassword) {
+      alert('Please fill all required fields in Step 2');
+      valid = false;
+    } else if (password !== confirmPassword) {
+      alert('Passwords do not match');
+      valid = false;
+    }
+  }
+
+  // Step 3: Additional Info
+  if (currentStep === 3) {
+    const address = document.getElementById('address').value.trim();
+    const state = document.getElementById('state').value.trim();
+    const city = document.getElementById('city').value.trim();
+    const zipCode = document.getElementById('zipCode').value.trim();
+    const terms = document.getElementById('terms').checked;
+
+    if (!address || !state || !city || !zipCode) {
+      alert('Please fill all required fields in Step 3');
+      valid = false;
+    } else if (!terms) {
+      alert('You must accept Terms of Service to continue');
+      valid = false;
+    }
+  }
+
+  if (valid) {
+    showStep(currentStep + 1);
+  }
+}
+
+
+// Similarly, your Back button can just call showStep(currentStep - 1)
+
+
+    // Password strength indicator
+    function checkPasswordStrength() {
+      const password = document.getElementById('password').value;
+      const strengthBar = document.getElementById('passwordStrength');
+      const helpText = document.getElementById('passwordHelp');
+
+      // Reset
+      strengthBar.style.width = '0';
+      strengthBar.style.background = '#ddd';
+
+      if (password.length === 0) {
+        helpText.textContent = 'Use at least 8 characters with a mix of letters, numbers & symbols';
+        helpText.style.color = 'var(--gray)';
+        return;
+      }
+
+      // Check password strength
+      let strength = 0;
+
+      // Length check
+      if (password.length >= 8) strength += 20;
+
+      // Contains both lower and uppercase characters
+      if (password.match(/([a-z].[A-Z])|([A-Z].[a-z])/)) strength += 20;
+
+      // Contains numbers
+      if (password.match(/([0-9])/)) strength += 20;
+
+      // Contains special characters
+      if (password.match(/([!,@,#,$,%,^,&,*,?,_,~])/)) strength += 20;
+
+      // Contains both letters and numbers
+      if (password.match(/([a-zA-Z])/) && password.match(/([0-9])/)) strength += 20;
+
+      // Update UI
+      strengthBar.style.width = strength + '%';
+
+      if (strength < 40) {
+        strengthBar.style.background = '#dc3545';
+        helpText.textContent = 'Weak password';
+        helpText.style.color = '#dc3545';
+      } else if (strength < 80) {
+        strengthBar.style.background = '#ffc107';
+        helpText.textContent = 'Medium strength password';
+        helpText.style.color = '#ffc107';
+      } else {
+        strengthBar.style.background = '#28a745';
+        helpText.textContent = 'Strong password!';
+        helpText.style.color = '#28a745';
+      }
+    }
+
+    // Password confirmation validation
+    function validatePassword() {
+      const password = document.getElementById('password').value;
+      const confirmPassword = document.getElementById('confirmPassword').value;
+      const matchText = document.getElementById('passwordMatch');
+
+      if (confirmPassword.length > 0 && password !== confirmPassword) {
+        matchText.style.display = 'block';
+      } else {
+        matchText.style.display = 'none';
+      }
+    }
+
+    // Form validation and submission
+    document.addEventListener('DOMContentLoaded', function () {
+      const forms = document.querySelectorAll('form');
+
+      forms.forEach(form => {
+        form.addEventListener('submit', function (e) {
+          e.preventDefault();
+
+          if (form.id === 'login-form') {
+            // Login form submission
+            alert('Login successful! In a real application, this would authenticate your credentials.');
+            showPage('home');
+          } else {
+            // Signup form submission
+            alert('Account created successfully! In a real application, this would submit your data.');
+            showPage('home');
+          }
+        });
+      });
+      
+   
+
+
+      // Add animation to the form elements
+      const inputs = document.querySelectorAll('input');
+      inputs.forEach(input => {
+        input.addEventListener('focus', function () {
+          this.parentElement.style.transform = 'scale(1.02)';
+          this.parentElement.style.boxShadow = '0 5px 15px rgba(0, 0, 0, 0.1)';
+        });
+
+        input.addEventListener('blur', function () {
+          this.parentElement.style.transform = 'scale(1)';
+          this.parentElement.style.boxShadow = 'none';
+        });
+      });
+
+      // Add floating animation to the main container
+      const mainContainers = document.querySelectorAll('.main-container');
+      mainContainers.forEach(container => {
+        container.style.opacity = '0';
+        container.style.transform = 'translateY(20px)';
+
+        setTimeout(() => {
+          container.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+          container.style.opacity = '1';
+          container.style.transform = 'translateY(0)';
+        }, 100);
+      });
+    });
+    document.addEventListener('DOMContentLoaded', function () {
+      // --- Input animations ---
+      const inputs = document.querySelectorAll('input');
+      inputs.forEach(input => {
+        input.addEventListener('focus', function () {
+          this.parentElement.style.transform = 'scale(1.02)';
+          this.parentElement.style.boxShadow = '0 5px 15px rgba(0, 0, 0, 0.1)';
+        });
+        input.addEventListener('blur', function () {
+          this.parentElement.style.transform = 'scale(1)';
+          this.parentElement.style.boxShadow = 'none';
+        });
+      });
+
+      // --- Floating animation for main containers ---
+      const mainContainers = document.querySelectorAll('.main-container');
+      mainContainers.forEach(container => {
+        container.style.opacity = '0';
+        container.style.transform = 'translateY(20px)';
+        setTimeout(() => {
+          container.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+          container.style.opacity = '1';
+          container.style.transform = 'translateY(0)';
+        }, 100);
+      });
+    });
+
+    
+
+const loginForm = document.getElementById('login-form');
+if (loginForm) {
+  loginForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const email = document.getElementById('login-email').value.trim();
+    const password = document.getElementById('login-password').value;
+
+    try {
+      const res = await fetch('/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include', // include cookies for session
+        body: JSON.stringify({ email, password })
+      });
+
+      const json = await res.json().catch(() => ({}));
+
+      // handle common errors
+      if (res.status === 404) {
+        alert(json.error || 'This email is not registered. Please sign up.');
+        return;
+      }
+      if (res.status === 401) {
+        alert(json.error || 'Incorrect password. Try again.');
+        return;
+      }
+      if (!res.ok) {
+        alert(json.error || 'Server error. Try again later.');
+        return;
+      }
+
+      // Login succeeded on backend; fetch current user data from /me
+      try {
+        const meRes = await fetch('/me', { credentials: 'include' });
+        if (meRes.ok) {
+          const meJson = await meRes.json();
+          // backend returns { user: {...} } — support both shapes
+          const userObj = meJson.user ? meJson.user : meJson;
+          // store in sessionStorage for dashboard to read (optional)
+          sessionStorage.setItem('sr_user', JSON.stringify(userObj));
+        } else {
+          // if /me failed, still proceed to dashboard (server session exists)
+          console.warn('/me fetch failed after login, status:', meRes.status);
+        }
+      } catch (errMe) {
+        console.warn('Failed to fetch /me after login:', errMe);
+      }
+
+      // Optional: short success message then redirect
+      // alert(json.message || 'Login successful!');
+      window.location.href = '/dashboard'; // go to the separate dashboard page
+
+    } catch (err) {
+      console.error(err);
+      alert('Network error. Is the backend running?');
+    }
+  });
+}
+
+    // SIGNUP handler (final step form id="step3")
+    const signupFinal = document.getElementById('step3');
+    if (signupFinal) {
+      signupFinal.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const userData = {
+          firstName: document.getElementById('firstName').value.trim(),
+          lastName: document.getElementById('lastName').value.trim(),
+          email: document.getElementById('email').value.trim(),
+          phone: document.getElementById('phone').value.trim(),
+          password: document.getElementById('password').value,
+          address: document.getElementById('address').value.trim(),
+          state: document.getElementById('state').value.trim(),
+          city: document.getElementById('city').value.trim(),
+          zipCode: document.getElementById('zipCode').value.trim(),
+          preferredPayment: document.getElementById('preferredPayment').value
+        };
+        // --- PHONE VALIDATION ---
+    if (!/^[0-9]{10}$/.test(userData.phone)) {
+      alert("Please enter a valid 10-digit phone number");
+      document.getElementById('phone').style.borderColor = 'red';
+      return; // stop submission if invalid
+    } else {
+      document.getElementById('phone').style.borderColor = 'green';
+    }
+
+        try {
+          const res = await fetch('/signup', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(userData)
+          });
+          const json = await res.json();
+
+          if (res.status === 409) {
+            alert(json.error || 'Email already registered. Please login.');
+            return;
+          }
+          if (!res.ok) {
+            alert(json.error || 'Server error. Try again later.');
+            return;
+          }
+
+          alert(json.message || 'Account created!');
+          showPage('login');
+        } catch (err) {
+          console.error(err);
+          alert('Network error. Is the backend running?');
+        }
+      });
+    }
+    // --- Phone validation ---
+const phoneInput = document.getElementById("phone");
+const phoneError = document.getElementById("phoneError");
+
+if (phoneInput) {
+  phoneInput.addEventListener("input", function () {
+    // Only keep digits
+    phoneInput.value = phoneInput.value.replace(/\D/g, "");
+
+    const value = phoneInput.value;
+    const isValid = /^[0-9]{10}$/.test(value);
+
+    if (!isValid) {
+      phoneInput.style.borderColor = "red";
+      phoneError.style.display = "block";
+    } else {
+      phoneInput.style.borderColor = "green";
+      phoneError.style.display = "none";
+    }
+  });
+}
+
+    const stateCityMap = {
+      "Maharashtra": ["Mumbai", "Pune", "Nagpur", "Nashik", "Aurangabad"],
+      "Gujarat": ["Ahmedabad", "Surat", "Vadodara", "Rajkot", "Bhavnagar"],
+      "Karnataka": ["Bengaluru", "Mysuru", "Mangaluru", "Hubballi", "Belagavi"],
+      "Delhi": ["New Delhi", "Dwarka", "Rohini", "Saket", "Karol Bagh"]
+      // you can keep adding more states & cities here
+    };
+
+    document.getElementById("state").addEventListener("change", function () {
+      const state = this.value;
+      const citySelect = document.getElementById("city");
+
+      // clear old options
+      citySelect.innerHTML = '<option value="">Select your city</option>';
+
+      if (state && stateCityMap[state]) {
+        stateCityMap[state].forEach(city => {
+          const opt = document.createElement("option");
+          opt.value = city;
+          opt.textContent = city;
+          citySelect.appendChild(opt);
+        });
+      }
+    });
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    
+<body>
+  <!-- Animated background elements -->
+  <div class="bg-elements">
+    <div style="left: 10%; animation-delay: 0s;"></div>
+    <div style="left: 20%; animation-delay: 2s;"></div>
+    <div style="left: 30%; animation-delay: 4s;"></div>
+    <div style="left: 40%; animation-delay: 6s;"></div>
+    <div style="left: 50%; animation-delay: 8s;"></div>
+    <div style="left: 60%; animation-delay: 10s;"></div>
+    <div style="left: 70%; animation-delay: 12s;"></div>
+    <div style="left: 80%; animation-delay: 14s;"></div>
+    <div style="left: 90%; animation-delay: 16s;"></div>
+  </div>
+
+  <!-- Navigation -->
+  <nav class="navbar">
+    <a href="#" class="nav-logo"onclick="showPage('home')"> 
+      SwiftRide</a>
+    <!-- <div class="nav-links" id="nav-links">
+      <a href="#" class="nav-link active" onclick="showPage('home')">Home</a>
+
+      <a href="#" onclick="showPage('ride')">Ride</a>
+
+      <a href="#" class="nav-link" onclick="showPage('login')">Login</a>
+
+      <a href="#" class="nav-link" onclick="showPage('signup')">Sign Up</a>
+       
+      <button class="theme-toggle" onclick="toggleTheme()">💡</button>
+    </div> -->
+
+    <div class="nav-links" id="nav-links">
+  <a href="#" class="nav-link active" onclick="showPage('home')">Home</a>
+  <a href="#" class="nav-link" onclick="showPage('ride')">Ride</a>
+
+  {% if session.get('user_id') %}
+    <!-- Authenticated view -->
+    <span class="nav-user">Hello, {{ session.get('firstName') or 'User' }}</span>
+    <a href="#" id="logout-btn" class="nav-link">Logout</a>
+  {% else %}
+    <!-- Not logged in -->
+    <a href="#" class="nav-link" onclick="showPage('login')">Login</a>
+    <a href="#" class="nav-link" onclick="showPage('signup')">Sign Up</a>
+  {% endif %}
+
+  <button class="theme-toggle" onclick="toggleTheme()">💡</button>
+</div>
+
+
+  </nav>
+
+
+
+
+  <!-- Home Page -->
+  <div id="home-page" class="page-container active">
+    <div class="hero-section">
+      <h2>Premium Cab Service</h2>
+      <!-- <p>Experience the future of transportation with SwiftRide. Book a ride in seconds, travel in style, and arrive
+        safely at your destination.</p> -->
+        <!-- sde -->
+         <!-- <h1>Home</h1>
+  <p>This is your landing page content...</p> -->
+
+  <!-- Welcome Message (hidden until login success) -->
+  <!-- <div id="welcome-message" style="display:none; margin-top:20px;">
+    <h2>Welcome back, <span id="user-name"></span> 👋</h2>
+    <p>Glad to see you again!</p>
+  </div> -->
+    <div class="ride-section-container">
+      <section class="ride-booking">
+        <h2>Book Your Ride</h2>
+        <p>Enter your pickup and drop-off locations to get an instant fare estimate.</p>
+
+        <div class="ride-form">
+
+          <!-- Pickup -->
+          <div class="location-input">
+            <span class="icon pickup-icon"></span>
+            <input type="text" id="pickup" placeholder="Pickup location">
+            <i class="fas fa-location-arrow map-icon"></i> <!-- Google Maps style icon -->
+          </div>
+
+
+          <!-- Connector line -->
+          <div class="connector"></div>
+
+          <!-- Dropoff -->
+          <div class="location-input">
+            <span class="icon dropoff-icon"></span>
+            <input type="text" id="dropoff" placeholder="Dropoff location">
+          </div>
+          <!-- ride polling -->
+            <!-- Extra fields to support your pooling logic -->
+      <!-- <input type="number" id="d_ac" placeholder="A→C Distance (km)">
+      <input type="number" id="d_shared" placeholder="Shared Distance (km)">
+      <input type="number" id="d_exclusive" placeholder="Exclusive Distance (km)">
+
+      <select id="owner">
+        <option value="P1">P1 (Requester last drop)</option>
+        <option value="P2">P2 (Sharer last drop)</option>
+      </select> -->
+
+          <button onclick="showPrice()">See prices</button>
+        </div>
+        <p id="price-output"></p>
+      </section>
+      <div id="map-container" style="width:100%; height:400px;"></div>
+      </div>
+
+    <div class="image">
+     <img src="{{ url_for('static', filename='images/image.png') }}" alt="image">
+    </div>
+
+
+      <div class="hero-buttons">
+        <button class="btn btn-primary" onclick="showPage('signup')">
+          <i class="fas fa-user-plus"></i> Create Account
+        </button>
+        <button class="btn btn-outline" onclick="showPage('login')">
+          <i class="fas fa-sign-in-alt"></i> Sign In
+        </button>
+      </div>
+
+      <div class="features-section">
+        <div class="feature-card"onclick="showPage('ride')">
+          <i class="fas fa-bolt"></i>
+          <h3>Quick Booking</h3>
+          <p>Get a ride in just a few taps</p>
+        </div>
+        <div class="feature-card">
+          <i class="fas fa-shield-alt"></i>
+          <h3>Safe Travel</h3>
+          <p>Verified drivers and vehicles</p>
+        </div>
+        <div class="feature-card">
+          <i class="fas fa-clock"></i>
+          <h3>Reserve</h3>
+          <p>Reserve your ride in advance so you can relax on the day of your trip</p>
+        </div>
+        <div class="feature-card">
+          <i class="fas fa-box"></i>
+          <h3>Courier</h3>
+          <p>SwiftRide makes same-day item delivery easier than ever</p>
+        </div>
+        <div class="feature-card">
+          <i class="fas fa-map-marker-alt"></i>
+          <h3>Live Tracking</h3>
+          <p>Real-time ride tracking</p>
+        </div>
+        <div class="feature-card">
+          <i class="fas fa-money-bill-wave"></i>
+          <h3>Best Prices</h3>
+          <p>Affordable rates for everyone</p>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- ride section -->
+  <!-- Uber-style Ride Booking Section -->
+  <!-- Ride Page -->
+
+  <!-- Uber-style Ride Booking Section -->
+  <!-- Ride Page -->
+  <div id="ride-page" class="page-container"  >
+    <!-- <h1>Book Your Ride</h1> -->
+    <div class="ride-container">
+      <div class="ride-form">
+        <!-- Pickup -->
+        <div class="location-input">
+          <span class="icon pickup-icon"></span>
+          <input type="text" id="pickup" placeholder="Pickup location">
+          <i class="fas fa-location-arrow map-icon"></i> <!-- Google Maps style icon -->
+        </div>
+
+        <!-- Line -->
+        <div class="ride-line"></div>
+
+        <!-- Dropoff -->
+        <!-- Dropoff -->
+        <div class="location-input">
+          <span class="icon dropoff-icon"></span>
+          <input type="text" id="dropoff" placeholder="Dropoff location">
+        </div>
+
+        <button onclick="showPrice()">Check Price</button>
+        <p id="price-output"></p>
+      </div>
+    </div>
+    <div id="map-container" style="width:100%; height:400px;"></div>
+
+  </div>
+
+
+
+
+  <!-- Login Page -->
+  <div id="login-page" class="page-container">
+    <div class="main-container">
+      <!-- Brand/Info Section -->
+      <div class="brand-section">
+        <div class="logo">SwiftRide</div>
+        <div class="brand-content">
+          <h2>Welcome Back!</h2>
+          <p>Sign in to access your account and book your next ride</p>
+
+          <ul class="features">
+            <li><i class="fas fa-check-circle"></i> Quick and easy access</li>
+            <li><i class="fas fa-check-circle"></i> Manage your rides</li>
+            <li><i class="fas fa-check-circle"></i> Update payment methods</li>
+            <li><i class="fas fa-check-circle"></i> View ride history</li>
+            <li><i class="fas fa-check-circle"></i> Exclusive member benefits</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Login Form Section -->
+      <div class="form-section">
+        <div class="form-header">
+          <h1>Sign In to Your Account</h1>
+          <p>Enter your credentials to continue</p>
+        </div>
+
+        <form id="login-form">
+          <div class="input-group">
+            <label for="login-email">Email Address</label>
+            <div class="input-field">
+              <i class="fas fa-envelope"></i>
+              <input type="email" id="login-email" placeholder="Enter your email address" required>
+            </div>
+          </div>
+
+          <div class="input-group">
+            <label for="login-password">Password</label>
+            <div class="input-field">
+              <i class="fas fa-lock"></i>
+              <input type="password" id="login-password" placeholder="Enter your password" required>
+                 <span class="toggle-password" onclick="togglePassword('login-password', this)">👁️</span>
+            </div>
+          </div>
+
+          <div class="login-options">
+            <div class="remember-me">
+              <input type="checkbox" id="remember">
+              <label for="remember">Remember me</label>
+            </div>
+            <a href="#" class="forgot-password">Forgot password?</a>
+          </div>
+
+          <div class="btn-group">
+            <button type="submit" class="btn btn-primary">Sign In</button>
+          </div>
+
+          <div class="social-login">
+            <p>Or sign in with</p>
+            <div class="social-buttons">
+              <div class="social-btn google">
+                <i class="fab fa-google"></i>
+              </div>
+              <div class="social-btn facebook">
+                <i class="fab fa-facebook-f"></i>
+              </div>
+              <div class="social-btn apple">
+                <i class="fab fa-apple"></i>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-link">
+            Don't have an account? <a href="#" onclick="showPage('signup')">Sign up</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Signup Page -->
+  <div id="signup-page" class="page-container">
+    <div class="main-container">
+      <!-- Brand/Info Section -->
+      <div class="brand-section">
+        <div class="logo">SwiftRide</div>
+        <div class="brand-content">
+          <h2>Join Thousands of Riders</h2>
+          <p>Create your account and enjoy premium cab services</p>
+
+          <ul class="features">
+            <li><i class="fas fa-check-circle"></i> Quick and easy registration</li>
+            <li><i class="fas fa-check-circle"></i> Exclusive member discounts</li>
+            <li><i class="fas fa-check-circle"></i> Ride history tracking</li>
+            <li><i class="fas fa-check-circle"></i> Priority customer support</li>
+            <li><i class="fas fa-check-circle"></i> Personalized travel experience</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Signup Form Section -->
+      <div class="form-section">
+        <div class="form-header">
+          <h1>Create Your Account</h1>
+          <p>Join us today and experience premium cab services</p>
+        </div>
+
+        <!-- Progress Steps -->
+        <div class="progress-bar">
+          <div class="progress-step completed">1</div>
+          <div class="progress-step active">2</div>
+          <div class="progress-step">3</div>
+        </div>
+
+        <!-- Step 1: Personal Information -->
+        <form class="form-step active" id="step1">
+          <div class="input-row">
+            <div class="input-group">
+              <label for="firstName">First Name</label>
+              <div class="input-field">
+                <i class="fas fa-user"></i>
+                <input type="text" id="firstName" placeholder="Enter your first name" required>
+              </div>
+            </div>
+            <div class="input-group">
+              <label for="lastName">Last Name</label>
+              <div class="input-field">
+                <i class="fas fa-user"></i>
+                <input type="text" id="lastName" placeholder="Enter your last name" required>
+              </div>
+            </div>
+          </div>
+
+          <div class="input-group">
+            <label for="email">Email Address</label>
+            <div class="input-field">
+              <i class="fas fa-envelope"></i>
+              <input type="email" id="email" placeholder="Enter your email address" required>
+            </div>
+          </div>
+
+          <div class="input-group">
+            <label for="phone">Phone Number</label>
+            <div class="input-field">
+              <i class="fas fa-phone"></i>
+              <input type="tel" id="phone" placeholder="Enter your phone number" required>
+            </div>
+              <small id="phoneError" style="display:none; color:red;">Phone number must be 10 digits only</small>
+          </div>
+
+          <div class="btn-group">
+            <!-- <button type="button" class="btn btn-primary" onclick="showStep(2)">Next</button> -->
+            <button type="button" class="btn btn-primary" onclick="nextStep(1)">Next</button>
+          </div>
+        </form>
+
+        <!-- Step 2: Account Details -->
+        <form class="form-step" id="step2">
+          <div class="input-group">
+            <label for="password">Password</label>
+            <div class="input-field">
+              <i class="fas fa-lock"></i>
+              <input type="password" id="password" placeholder="Create a strong password" required
+                oninput="checkPasswordStrength()">
+            </div>
+            <div class="password-strength">
+              <div class="strength-meter" id="passwordStrength"></div>
+            </div>
+            <small id="passwordHelp" style="display:block; margin-top:5px; color:var(--gray);">Use at least 8 characters
+              with a mix of letters, numbers & symbols</small>
+          </div>
+
+          <div class="input-group">
+            <label for="confirmPassword">Confirm Password</label>
+            <div class="input-field">
+              <i class="fas fa-lock"></i>
+              <input type="password" id="confirmPassword" placeholder="Confirm your password" required
+                oninput="validatePassword()">
+            </div>
+            <small id="passwordMatch"
+              style="display:block; margin-top:5px; color:var(--danger); display:none;">Passwords do not match</small>
+          </div>
+
+          <div class="btn-group">
+            <!-- <button type="button" class="btn btn-outline" onclick="showStep(1)">Back</button>
+            <button type="button" class="btn btn-primary" onclick="showStep(3)">Next</button> -->
+             <button type="button" class="btn btn-outline" onclick="showStep(1)">Back</button>
+             <button type="button" class="btn btn-primary" onclick="nextStep(2)">Next</button>
+          </div>
+        </form>
+
+        <!-- Step 3: Additional Information -->
+        <form class="form-step" id="step3">
+          <div class="input-group">
+            <label for="address">Home Address</label>
+            <div class="input-field">
+              <i class="fas fa-home"></i>
+              <input type="text" id="address" placeholder="Enter your home address">
+            </div>
+          </div>
+          <div class="input-group">
+            <label for="state">State</label>
+            <div class="input-field">
+              <i class="fas fa-map-marker-alt"></i>
+              <select id="state" required>
+                <option value="">Select your state</option>
+                <option value="Andhra Pradesh">Andhra Pradesh</option>
+                <option value="Arunachal Pradesh">Arunachal Pradesh</option>
+                <option value="Assam">Assam</option>
+                <option value="Bihar">Bihar</option>
+                <option value="Chhattisgarh">Chhattisgarh</option>
+                <option value="Delhi">Delhi</option>
+                <option value="Goa">Goa</option>
+                <option value="Gujarat">Gujarat</option>
+                <option value="Haryana">Haryana</option>
+                <option value="Himachal Pradesh">Himachal Pradesh</option>
+                <option value="Jharkhand">Jharkhand</option>
+                <option value="Karnataka">Karnataka</option>
+                <option value="Kerala">Kerala</option>
+                <option value="Madhya Pradesh">Madhya Pradesh</option>
+                <option value="Maharashtra">Maharashtra</option>
+                <option value="Manipur">Manipur</option>
+                <option value="Meghalaya">Meghalaya</option>
+                <option value="Mizoram">Mizoram</option>
+                <option value="Nagaland">Nagaland</option>
+                <option value="Odisha">Odisha</option>
+                <option value="Punjab">Punjab</option>
+                <option value="Rajasthan">Rajasthan</option>
+                <option value="Sikkim">Sikkim</option>
+                <option value="Tamil Nadu">Tamil Nadu</option>
+                <option value="Telangana">Telangana</option>
+                <option value="Tripura">Tripura</option>
+                <option value="Uttar Pradesh">Uttar Pradesh</option>
+                <option value="Uttarakhand">Uttarakhand</option>
+                <option value="West Bengal">West Bengal</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- <div class="input-group">
+  <label for="city">City</label>
+  <div class="input-field">
+    <i class="fas fa-city"></i>
+    <select id="city" required>
+      <option value="">Select your city</option>
+    </select>
+  </div>
+</div> -->
+          <div class="input-row">
+            <div class="input-group"> <label for="city">City</label>
+              <div class="input-field">
+                 <i class="fas fa-city"></i>
+                  <!-- <input type="text" id="city"
+                  placeholder="Enter your city"> -->
+                  <select  id="city" required>
+                    <option value="">select your city</option>
+                  </select>
+                 </div>
+            </div>
+            <div class="input-group">
+              <label for="zipCode">ZIP Code</label>
+              <div class="input-field">
+                <i class="fas fa-mail-bulk"></i>
+                <input type="text" id="zipCode" placeholder="ZIP code">
+              </div>
+            </div>
+          </div>
+
+          <div class="input-group">
+            <label for="preferredPayment">Preferred Payment Method</label>
+            <div class="input-field">
+              <i class="fas fa-credit-card"></i>
+              <select id="preferredPayment">
+                <option value="">Select payment method</option>
+                <option value="credit_card">Credit Card</option>
+                <option value="debit_card">Debit Card</option>
+                <option value="paypal">PayPal</option>
+                <option value="upi">UPI</option>
+                <option value="cash">Cash</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="terms">
+            <input type="checkbox" id="terms" required>
+            <label for="terms">I agree to the <a href="#">Terms of Service</a> and <a href="#">Privacy
+                Policy</a></label>
+          </div>
+
+          <div class="terms">
+            <input type="checkbox" id="newsletter">
+            <label for="newsletter">Send me promotional offers and updates</label>
+          </div>
+
+          <div class="btn-group">
+            <button type="button" class="btn btn-outline" onclick="showStep(2)">Back</button>
+            <button type="submit" class="btn btn-primary">Create Account</button>
+          </div>
+        </form>
+
+        <div class="form-link">
+          Already have an account? <a href="#" onclick="showPage('login')">Log in</a>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- Footer -->
+  <footer id="main-footer" class="footer">
+    <div class="footer-container">
+
+      <!-- Brand Section -->
+      <div class="footer-brand">
+         <img src="{{ url_for('static', filename='images/cab.jpg') }}" alt="SwiftRide Logo" class="footer-logo">
+        <!-- <img src="cab.jpg" alt="SwiftRide Logo" class="footer-logo"> -->
+        <p>SwiftRide – Premium Cab Services for a safer, faster and more comfortable journey.</p>
+      </div>
+
+      <!-- Quick Links -->
+      <div class="footer-links">
+        <h3>Company</h3>
+        <ul>
+          <li><a href="#">About Us</a></li>
+          <li><a href="#">Careers</a></li>
+          <li><a href="#">Blog</a></li>
+          <li><a href="#">Press</a></li>
+        </ul>
+      </div>
+
+      <div class="footer-links">
+        <h3>Support</h3>
+        <ul>
+          <li><a href="#">Help Center</a></li>
+          <li><a href="#">Safety</a></li>
+          <li><a href="#">Contact Us</a></li>
+          <li><a href="#">COVID-19 Updates</a></li>
+        </ul>
+      </div>
+
+      <!-- Social & Apps -->
+      <div class="footer-social">
+        <h3>Follow Us</h3>
+        <div class="social-icons">
+          <a href="#"><i class="fab fa-facebook-f"></i></a>
+          <a href="#"><i class="fab fa-twitter"></i></a>
+          <a href="#"><i class="fab fa-instagram"></i></a>
+          <a href="#"><i class="fab fa-linkedin-in"></i></a>
+        </div>
+        <h3>Get the App</h3>
+        <div class="app-buttons">
+          <a href="#"><img src="https://upload.wikimedia.org/wikipedia/commons/7/78/Google_Play_Store_badge_EN.svg"
+              alt="Google Play"></a>
+          <a href="#"><img src="https://developer.apple.com/assets/elements/badges/download-on-the-app-store.svg"
+              alt="App Store"></a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom -->
+    <div class="footer-bottom">
+      <p>© 2025 SwiftRide. All rights reserved. | <a href="#">Privacy Policy</a> | <a href="#">Terms of Service</a></p>
+    </div>
+  </footer>
+
+
