@@ -7,46 +7,26 @@
   <title>SwiftRide - Premium Cab Services</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
-   <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.css" />
- <!-- <link rel="stylesheet" href="https://apis.mappls.com/advancedmaps/api/80770a36d59caa869260ae69c9902da4/map_sdk.css"/> -->
- <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}"/>
- <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.css" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 
- <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
-<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-<!-- <script src="https://unpkg.com/leaflet-polyline-encoded@0.0.4/Polyline.encoded.js"></script>  -->
-<!-- Leaflet CSS & JS -->
-<link
-  rel="stylesheet"
-  href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-/>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="https://unpkg.com/leaflet-polyline-encoded@0.0.4/Polyline.encoded.js"></script>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/leaflet-polyline-encoded@0.0.4/Polyline.encoded.js"></script>
 
-  <!-- <script async src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY&callback=initMap">
-    
-  </script> -->
-  <!-- <script src="https://apis.mappls.com/advancedmaps/api/80770a36d59caa869260ae69c9902da4/map_sdk.js"></script> -->
-
-<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-<script src="https://unpkg.com/@mapbox/polyline"></script>
-
-<!-- Your custom JS files -->
-<script src="{{ url_for('static', filename='js/index.js') }}"></script>
-
-
-  <style>
- 
-
-  </style>
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/@mapbox/polyline"></script>
+  <script src="{{ url_for('static', filename='js/index.js') }}"></script>
 </head>
 
 <body>
   <!-- Animated background elements -->
-   <div class="bg-elements">
+  <div class="bg-elements">
     <div style="left: 10%; animation-delay: 0s;"></div>
     <div style="left: 20%; animation-delay: 2s;"></div>
     <div style="left: 30%; animation-delay: 4s;"></div>
@@ -60,7 +40,7 @@
 
   <!-- Navigation -->
   <nav class="navbar">
-    <!-- <img src="{{ url_for('static', filename='images/logo.png') }}" alt="SwiftRide Logo" class="footer-logo"> -->
+    <!-- <img src="{{ url_for('static', filename='images/logo.png') }}" width="30" alt="SwiftRide Logo" class=""> -->
     <a href="#" class="nav-logo" onclick="showPage('home')">SwiftRide</a>
     
     <div class="nav-links" id="nav-links">
@@ -69,42 +49,32 @@
 
       {% if session.get('user_id') %}
         <!-- Authenticated view -->
-        <!-- <span class="nav-user">Hello, {{ session.get('firstName') or 'User' }}</span> -->
-         <div class="user-dropdown">
-  <button class="user-btn" id="userBtn">
-    {{ session.get('firstName') or 'User' }}
-    <span class="arrow">▼</span>
-  </button>
-  <div class="dropdown-menu" id="dropdownMenu">
-      <!-- <a href="#" id="logout-btn" class="nav-link">Logout</a> -->
-          <div class="user-info">
-      <strong>{{ session.get('firstName') or 'User' }}</strong><br>
-      <small>{{ session.get('email') or '' }}</small>
-       <img src="{{ url_for('static', filename='images/profile.png') }}" alt="SwiftRide Logo" width="30" >
-     
-    </div>
-    <hr>
-
-    <a href="#">Help</a>
-    <a href="#">Wallet</a>
-    <!-- <a href="#">Activity</a>
-    <a href="#">Manage account</a>
-    <a href="#">Other types of earnings</a> -->
-    <a href="#">Ride</a>
-    <!-- <a href="#">Drive & deliver</a> -->
-    <!-- <a href="#">Uber Eats</a>
-    <a href="#">Store location</a>
-    <a href="#">Uber for Business</a> -->
-    <hr>
-        <a href="#" id="logout-btn">Logout</a>
-  </div>
-</div>
-
-        <!-- <a href="#" id="logout-btn" class="nav-link">Logout</a> -->
+        <div class="user-dropdown">
+          <button class="user-btn" id="userBtn">
+            {{ session.get('firstName') or 'User' }}
+            <span class="arrow">▼</span>
+          </button>
+          <div class="dropdown-menu" id="dropdownMenu">
+            <div class="user-info">
+              <strong>{{ session.get('firstName') or 'User' }}</strong><br>
+              <small>{{ session.get('email') or '' }}</small>
+              <img src="{{ url_for('static', filename='images/profile.png') }}" alt="Profile" width="30">
+            </div>
+            <hr>
+            <a href="#">Help</a>
+            <a href="#">Wallet</a>
+            <a href="#" onclick="showPage('ride')">Ride</a>
+            <a href="/driver/dashboard">Driver Dashboard</a>
+            <hr>
+            <a href="#" id="logout-btn">Logout</a>
+          </div>
+        </div>
       {% else %}
         <!-- Not logged in -->
-        <a href="#" class="nav-link" onclick="showPage('login')">Login</a>
-        <a href="#" class="nav-link" onclick="showPage('signup')">Sign Up</a>
+        <!-- <a href="#" class="nav-link" onclick="showPage('login')">Login</a> -->
+        <a href="#" class="nav-link" onclick="showPage('signup')">Users</a>
+        <!-- <a href="#" class="nav-link" onclick="showPage('driver-login')">Driver Login</a> -->
+        <a href="#" class="nav-link" onclick="showPage('driver-signup')">Driver's</a>
       {% endif %}
 
       <button class="theme-toggle" onclick="toggleTheme()">💡</button>
@@ -124,11 +94,10 @@
           {% if not session.get('user_id') %}
           <h2>Book Your Ride</h2>
           <p>Enter your pickup and drop-off locations to get an instant fare estimate.</p>
-           {% endif %}
-           {% if session.get('user_id') %}
-       <p>Discover the convenience of SwiftRide. Request a ride now, or schedule one for later directly from your browser.</p>
-      {% endif %}
-
+          {% endif %}
+          {% if session.get('user_id') %}
+          <p>Discover the convenience of SwiftRide. Request a ride now, or schedule one for later directly from your browser.</p>
+          {% endif %}
 
           <div class="ride-form">
             <!-- Pickup -->
@@ -153,51 +122,36 @@
         </section>
         <div id="map-container" style="width:100%; height:400px;"></div>
       </div>
-      
-      <!-- <div class="image">
-        <img src="{{ url_for('static', filename='images/image.png') }}" alt="SwiftRide">
-        
-      </div> -->
-     <!-- <div class="video">
-  <video width="500" autoplay loop muted>
-    <source src="{{ url_for('static', filename='videos/demo.mp4') }}" type="video/mp4">
-    Your browser does not support the video tag.
-  </video>
-</div> -->
 
+      <section class="steps-section">
+        <h2>Book your trip on your computer</h2>
 
+        <div class="step">
+          <div class="video">
+            <video width="500" autoplay loop muted>
+              <source src="{{ url_for('static', filename='videos/demo.mp4') }}" type="video/mp4">
+              Your browser does not support the video tag.
+            </video>
+          </div>
+          <div class="text">
+            <h3>1. Add your trip details</h3>
+            <p>Enter your pickup spot and destination, and check prices for your trip.</p>
+          </div>
+        </div>
 
-<section class="steps-section">
-  <h2>Book your trip on your computer</h2>
-
-  <div class="step">
-    <div class="video">
-       <video width="500" autoplay loop muted>
-    <source src="{{ url_for('static', filename='videos/demo.mp4') }}" type="video/mp4">
-    Your browser does not support the video tag.
-  </video>
-    </div>
-    <div class="text">
-      <h3>1. Add your trip details</h3>
-      <p>Enter your pickup spot and destination, and check prices for your trip.</p>
-    </div>
-  </div>
-
-  <div class="step">
-    <div class="video">
-      <video width="500" autoplay loop muted>
-    <source src="{{ url_for('static', filename='videos/demo2.mp4') }}" type="video/mp4">
-    Your browser does not support the video tag.
-  </video>
-    </div>
-    <div class="text">
-      <h3>2. Pay easily</h3>
-      <p>Add your preferred payment method, then choose among the ride options available in your location.</p>
-    </div>
-  </div>
-</section>
-
-      
+        <div class="step">
+          <div class="video">
+            <video width="500" autoplay loop muted>
+              <source src="{{ url_for('static', filename='videos/demo2.mp4') }}" type="video/mp4">
+              Your browser does not support the video tag.
+            </video>
+          </div>
+          <div class="text">
+            <h3>2. Pay easily</h3>
+            <p>Add your preferred payment method, then choose among the ride options available in your location.</p>
+          </div>
+        </div>
+      </section>
 
       {% if not session.get('user_id') %}
         <div class="hero-buttons">
@@ -211,28 +165,18 @@
       {% endif %}
 
       <div class="features-section">
-          {% if not session.get('user_id') %}
+        {% if not session.get('user_id') %}
         <div class="feature-card" onclick="showPage('login')">
           <i class="fas fa-bolt"></i>
           <h3>Quick Booking</h3>
           <p>Get a ride in just a few taps</p>
         </div>
-         {% endif %}
+        {% endif %}
         <div class="feature-card">
           <i class="fas fa-shield-alt"></i>
           <h3>Safe Travel</h3>
           <p>Verified drivers and vehicles</p>
         </div>
-        <!-- <div class="feature-card">
-          <i class="fas fa-clock"></i>
-          <h3>Reserve</h3>
-          <p>Reserve your ride in advance so you can relax on the day of your trip</p>
-        </div> -->
-        <!-- <div class="feature-card">
-          <i class="fas fa-box"></i>
-          <h3>Courier</h3>
-          <p>SwiftRide makes same-day item delivery easier than ever</p>
-        </div> -->
         <div class="feature-card">
           <i class="fas fa-map-marker-alt"></i>
           <h3>Live Tracking</h3>
@@ -549,16 +493,295 @@
     </div>
   </div>
 
+ <!-- DRIVER SIGNUP PAGE -->
+<!-- Replace your driver-signup-page section with this -->
+<div id="driver-signup-page" class="page-container">
+  <div class="main-container">
+   
+    <div class="brand-section">
+      <div class="logo">SwiftRide</div>
+      <div class="brand-content">
+        <h2>Driver Sign Up</h2>
+        <p>Join SwiftRide and start earning by providing quality rides!</p>
+        <ul class="features">
+          <li><i class="fas fa-check-circle"></i> Quick onboarding</li>
+          <li><i class="fas fa-check-circle"></i> Upload license & documents</li>
+          <li><i class="fas fa-check-circle"></i> Start earning today</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="form-section">
+      <div class="form-header">
+        <h1>Create Your Driver Account</h1>
+        <p>Fill out the details below to get started</p>
+      </div>
+
+     
+      <div class="progress-bar">
+        <div class="progress-step active">1</div>
+        <div class="progress-step">2</div>
+        <div class="progress-step">3</div>
+      </div>
+
+      
+      <div class="form-step active" id="driverStep1">
+        <div class="input-row">
+          <div class="input-group">
+            <label for="driver_firstName">First Name</label>
+            <div class="input-field">
+              <i class="fas fa-user"></i>
+              <input type="text" id="driver_firstName" placeholder="Enter your first name" required>
+            </div>
+          </div>
+          <div class="input-group">
+            <label for="driver_lastName">Last Name</label>
+            <div class="input-field">
+              <i class="fas fa-user"></i>
+              <input type="text" id="driver_lastName" placeholder="Enter your last name" required>
+            </div>
+          </div>
+        </div>
+
+        <div class="input-group">
+          <label for="driver_email">Email Address</label>
+          <div class="input-field">
+            <i class="fas fa-envelope"></i>
+            <input type="email" id="driver_email" placeholder="Enter your email address" required>
+          </div>
+        </div>
+
+        <div class="input-group">
+          <label for="driver_phone">Phone Number</label>
+          <div class="input-field">
+            <i class="fas fa-phone"></i>
+            <input type="tel" id="driver_phone" placeholder="Enter 10-digit phone number" maxlength="10" required>
+          </div>
+          <small id="driver_phoneError" style="display:none; color:red;">Phone number must be 10 digits only</small>
+        </div>
+
+        <div class="btn-group">
+          <button type="button" class="btn btn-primary" onclick="nextStep(1)">Next</button>
+           <!-- <a href="#" class="" onclick="showPage('driver-login')">Driver Login</a> -->
+        </div>
+          <div class="form-link">
+          Already have an account? <a href="#" onclick="showPage('driver-login')">Log in</a>
+        </div>
+      </div>
+
+      
+      <div class="form-step" id="driverStep2">
+        <div class="input-group">
+          <label for="license_no">License Number</label>
+          <div class="input-field">
+            <i class="fas fa-id-card"></i>
+            <input type="text" id="license_no" placeholder="Enter license number" required>
+          </div>
+        </div>
+
+        <div class="input-group">
+          <label for="license_image">Upload License Image</label>
+          <div class="input-field">
+            <i class="fas fa-file-upload"></i>
+            <input type="file" id="license_image" accept=".jpg,.jpeg,.png,.pdf" required>
+          </div>
+          <div class="file-preview" id="licensePreview" style="margin-top:8px;"></div>
+        </div>
+
+        <div class="input-group">
+          <label for="vehicle_type">Vehicle Type</label>
+          <div class="input-field">
+            <i class="fas fa-car"></i>
+            <select id="vehicle_type" required>
+              <option value="">Select your vehicle type</option>
+              <option value="Sedan">Sedan</option>
+              <option value="Hatchback">Hatchback</option>
+              <option value="SUV">SUV</option>
+              <option value="Auto Rickshaw">Auto Rickshaw</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="input-row">
+          <div class="input-group">
+            <label for="vehicle_make">Vehicle Make</label>
+            <div class="input-field">
+              <i class="fas fa-car-side"></i>
+              <input type="text" id="vehicle_make" placeholder="e.g., Toyota, Honda">
+            </div>
+          </div>
+          <div class="input-group">
+            <label for="vehicle_model">Vehicle Model</label>
+            <div class="input-field">
+              <i class="fas fa-car"></i>
+              <input type="text" id="vehicle_model" placeholder="e.g., Camry, City">
+            </div>
+          </div>
+        </div>
+
+        <div class="input-group">
+          <label for="license_plate">License Plate Number</label>
+          <div class="input-field">
+            <i class="fas fa-id-badge"></i>
+            <input type="text" id="license_plate" placeholder="Enter vehicle registration number" style="text-transform: uppercase;">
+          </div>
+        </div>
+
+        <div class="btn-group">
+          <button type="button" class="btn btn-outline" onclick="showStep(1)">Back</button>
+          <button type="button" class="btn btn-primary" onclick="nextStep(2)">Next</button>
+        </div>
+      </div>
+
+     
+<form class="form-step" id="driverStep3">
+  <div class="input-group">
+    <label for="password_driver">Password</label>
+    <div class="input-field">
+      <i class="fas fa-lock"></i>
+      <input type="password" id="password_driver" placeholder="Create a strong password" required minlength="8">
+      <span class="toggle-password" onclick="togglePassword('password_driver', this)">👁️</span>
+    </div>
+    <div class="password-strength">
+      <div class="strength-meter" id="passwordStrength"></div>
+    </div>
+    <small style="display:block; margin-top:5px; color:var(--gray);">
+      Use at least 8 characters with a mix of letters, numbers & symbols
+    </small>
+  </div>
+
+  <div class="input-group">
+    <label for="confirmPassword_driver">Confirm Password</label>
+    <div class="input-field">
+      <i class="fas fa-lock"></i>
+      <input type="password" id="confirmPassword_driver" placeholder="Confirm password" required>
+      <span class="toggle-password" onclick="togglePassword('confirmPassword_driver', this)">👁️</span>
+    </div>
+    <small id="driver_passwordMatch" style="display:none; color:red;">Passwords do not match</small>
+  </div>
+
+  <div class="terms">
+    <input type="checkbox" id="terms_driver" required>
+    <label for="terms_driver">I agree to the <a href="#">Terms of Service</a> & <a href="#">Privacy Policy</a></label>
+  </div>
+
+  <div class="btn-group">
+    <button type="button" class="btn btn-outline" onclick="showStep(2)">Back</button>
+    <button type="submit" class="btn btn-primary">Create Driver Account</button>
+  </div>
+    
+</form>
+ </div> <!-- End form-section -->
+  </div> <!-- End main-container -->
+</div> 
+
+ 
+
+
+<!-- DRIVER LOGIN PAGE - Place this in your index.html -->
+<!-- Replace the entire driver-login-page section with this -->
+
+<div id="driver-login-page" class="page-container">
+  <div class="main-container">
+    <!-- Brand/Info Section -->
+    <div class="brand-section">
+      <div class="logo">SwiftRide</div>
+      <div class="brand-content">
+        <h2>Driver Login</h2>
+        <p>Sign in to access your driver dashboard and manage your rides</p>
+
+        <ul class="features">
+          <li><i class="fas fa-check-circle"></i> View ride requests</li>
+          <li><i class="fas fa-check-circle"></i> Manage your schedule</li>
+          <li><i class="fas fa-check-circle"></i> Track earnings</li>
+          <li><i class="fas fa-check-circle"></i> Update availability</li>
+          <li><i class="fas fa-check-circle"></i> View ratings and feedback</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Login Form Section -->
+    <div class="form-section">
+      <div class="form-header">
+        <h1>Driver Sign In</h1>
+        <p>Enter your credentials to access your dashboard</p>
+      </div>
+
+      <form id="driver-login-form">
+        <div class="input-group">
+          <label for="driver-login-email">Email Address</label>
+          <div class="input-field">
+            <i class="fas fa-envelope"></i>
+            <input type="email" id="driver-login-email" placeholder="Enter your email address">
+          </div>
+        </div>
+        
+        <div class="input-group">
+          <label for="driver-login-phone">Phone Number (Optional)</label>
+          <div class="input-field">
+            <i class="fas fa-phone"></i>
+            <input type="tel" id="driver-login-phone" placeholder="Or enter your phone number" maxlength="10">
+          </div>
+          <small style="color: var(--gray); display: block; margin-top: 5px;">
+            You can login with either email or phone
+          </small>
+        </div>
+
+        <div class="input-group">
+          <label for="driver-login-password">Password</label>
+          <div class="input-field">
+            <i class="fas fa-lock"></i>
+            <input type="password" id="driver-login-password" placeholder="Enter your password" required>
+            <span class="toggle-password" onclick="togglePassword('driver-login-password', this)">👁️</span>
+          </div>
+        </div>
+
+        <div class="login-options">
+          <div class="remember-me">
+            <input type="checkbox" id="driver-remember">
+            <label for="driver-remember">Remember me</label>
+          </div>
+          <a href="#" class="forgot-password">Forgot password?</a>
+        </div>
+
+        <div class="btn-group">
+          <button type="submit" class="btn btn-primary">Sign In as Driver</button>
+        </div>
+
+        <div class="social-login">
+          <p>Or sign in with</p>
+          <div class="social-buttons">
+            <div class="social-btn google">
+              <i class="fab fa-google"></i>
+            </div>
+            <div class="social-btn facebook">
+              <i class="fab fa-facebook-f"></i>
+            </div>
+            <div class="social-btn apple">
+              <i class="fab fa-apple"></i>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-link">
+          Not a driver yet? <a href="#" onclick="showPage('driver-signup')">Sign up as driver</a> | 
+          <a href="#" onclick="showPage('login')">User login</a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
   <!-- Footer -->
-  <footer id="main-footer" class="footer">
+  <!-- <footer id="main-footer" class="footer">
     <div class="footer-container">
-      <!-- Brand Section -->
+     
       <div class="footer-brand">
         <img src="{{ url_for('static', filename='images/logo.png') }}" alt="SwiftRide Logo" class="footer-logo">
         <p>SwiftRide – Premium Cab Services for a safer, faster and more comfortable journey.</p>
       </div>
 
-      <!-- Quick Links -->
+      
       <div class="footer-links">
         <h3>SwiftRide</h3>
         <ul>
@@ -579,7 +802,7 @@
         </ul>
       </div>
 
-      <!-- Social & Apps -->
+     
       <div class="footer-social">
         <h3>Follow Us</h3>
         <div class="social-icons">
@@ -596,23 +819,443 @@
       </div>
     </div>
 
-    <!-- Bottom -->
+  
     <div class="footer-bottom">
       <p>© 2025 SwiftRide. All rights reserved. | <a href="#">Privacy Policy</a> | <a href="#">Terms of Service</a></p>
     </div>
-  </footer>
+  </footer> -->
 
   <!-- Leaflet JS -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <!-- Leaflet Routing Machine JS -->
   <script src="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.js"></script>
 
-  <script>
+ 
+
+<!-- <script>
+console.log('=== DEBUG ===');
+console.log('Form exists?', !!document.getElementById('driverStep3'));
+console.log('Form element:', document.getElementById('driverStep3'));
+
+// Try to see if handler is attached
+const form = document.getElementById('driverStep3');
+if (form) {
+  form.addEventListener('submit', (e) => {
+    console.log('🛑 FALLBACK HANDLER - Should not see this!');
+    e.preventDefault();
+    alert('Form submitted but handler not working!');
+  });
+}
+</script> -->
+<!-- Add this script at the VERY END of your index.html, right before </body> -->
+<script>
 
 
 
 
-  </script>
+
+
+
+
+console.log('🔧 Loading inline driver signup handler...');
+
+// Wait for everything to load
+window.addEventListener('load', function() {
+  console.log('✅ Window loaded, attaching driver signup handler...');
+  
+  const form = document.getElementById('driverStep3');
+  
+  if (!form) {
+    console.error('❌ driverStep3 not found!');
+    return;
+  }
+  
+  console.log('✅ Found form:', form);
+  
+  // Remove ALL existing event listeners by cloning the form
+  const newForm = form.cloneNode(true);
+  form.parentNode.replaceChild(newForm, form);
+  const freshForm = document.getElementById('driverStep3');
+  
+  console.log('🔄 Form cloned to remove old handlers');
+  
+  // License preview
+  const licenseInput = document.getElementById('license_image');
+  const licensePreview = document.getElementById('licensePreview');
+  
+  if (licenseInput) {
+    licenseInput.addEventListener('change', function(e) {
+      if (!licensePreview) return;
+      licensePreview.innerHTML = '';
+      const f = e.target.files[0];
+      if (!f) return;
+      
+      const ext = (f.name.split('.').pop() || '').toLowerCase();
+      const allowed = ['jpg','jpeg','png','pdf'];
+      
+      if (!allowed.includes(ext)) {
+        licensePreview.innerHTML = '<div style="color:red;">Invalid file type</div>';
+        licenseInput.value = '';
+        return;
+      }
+      
+      if (f.size > 5 * 1024 * 1024) {
+        licensePreview.innerHTML = '<div style="color:red;">File too large (max 5MB)</div>';
+        licenseInput.value = '';
+        return;
+      }
+      
+      if (f.type.startsWith('image/')) {
+        const img = document.createElement('img');
+        img.src = URL.createObjectURL(f);
+        img.style.maxWidth = '220px';
+        img.style.borderRadius = '6px';
+        licensePreview.appendChild(img);
+      } else {
+        const p = document.createElement('div');
+        p.style.color = 'green';
+        p.textContent = '✓ ' + f.name;
+        licensePreview.appendChild(p);
+      }
+    });
+  }
+  
+  // Main submit handler
+  freshForm.addEventListener('submit', async function(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    e.stopImmediatePropagation();
+    
+    console.log('🚀 INLINE HANDLER: Form submitted!');
+    
+    // Get values
+    function getVal(id) {
+      const el = document.getElementById(id);
+      return el ? (el.value || '').trim() : '';
+    }
+    
+    const firstName = getVal('driver_firstName');
+    const lastName = getVal('driver_lastName');
+    const full_name = (firstName + ' ' + lastName).trim();
+    const phone = getVal('driver_phone');
+    const email = getVal('driver_email');
+    const license_no = getVal('license_no');
+    const vehicle_type = getVal('vehicle_type');
+    const vehicle_make = getVal('vehicle_make');
+    const vehicle_model = getVal('vehicle_model');
+    const license_plate = getVal('license_plate');
+    const password = getVal('password_driver');
+    const confirm = getVal('confirmPassword_driver');
+    
+    console.log('📋 Data:', {firstName, lastName, phone, email, license_no, vehicle_type});
+    
+    // Validate
+    if (!firstName || !lastName) {
+      alert('❌ First and last name required');
+      if (typeof showStep === 'function') showStep(1);
+      return;
+    }
+    
+    if (!phone || !/^\d{10}$/.test(phone)) {
+      alert('❌ Valid 10-digit phone required');
+      if (typeof showStep === 'function') showStep(1);
+      return;
+    }
+    
+    if (!email) {
+      alert('❌ Email required');
+      if (typeof showStep === 'function') showStep(1);
+      return;
+    }
+    
+    if (!license_no || !vehicle_type) {
+      alert('❌ License and vehicle type required');
+      if (typeof showStep === 'function') showStep(2);
+      return;
+    }
+    
+    const licenseFile = licenseInput?.files?.[0];
+    if (!licenseFile) {
+      alert('❌ License image required');
+      if (typeof showStep === 'function') showStep(2);
+      return;
+    }
+    
+    if (!password || password.length < 8) {
+      alert('❌ Password must be 8+ characters');
+      return;
+    }
+    
+    if (password !== confirm) {
+      alert('❌ Passwords do not match');
+      return;
+    }
+    
+    // Build FormData
+    const fd = new FormData();
+    fd.append('full_name', full_name);
+    fd.append('firstName', firstName);
+    fd.append('lastName', lastName);
+    fd.append('phone', phone);
+    fd.append('email', email);
+    fd.append('license_no', license_no);
+    fd.append('vehicle_type', vehicle_type);
+    fd.append('vehicle_make', vehicle_make);
+    fd.append('vehicle_model', vehicle_model);
+    fd.append('license_plate', license_plate);
+    fd.append('password', password);
+    fd.append('license_image', licenseFile, licenseFile.name);
+    
+    console.log('📤 Sending to /driver/signup...');
+    
+    const submitBtn = freshForm.querySelector('button[type="submit"]');
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Creating...';
+    }
+    
+    try {
+      const res = await fetch('/driver/signup', {
+        method: 'POST',
+        credentials: 'include',
+        body: fd
+      });
+      
+      console.log('📥 Status:', res.status);
+      const data = await res.json().catch(() => ({}));
+      console.log('📥 Data:', data);
+      
+      if (res.status === 201) {
+        alert('✅ Account created! Redirecting to login...');
+        setTimeout(() => {
+          if (typeof showPage === 'function') {
+            showPage('driver-login');
+          } else {
+            window.location.href = '/driver/login';
+          }
+        }, 1000);
+        return;
+      }
+      
+      if (res.status === 409) {
+        alert('❌ ' + (data.error || 'Phone/email already registered'));
+        return;
+      }
+      
+      alert('❌ ' + (data.error || 'Signup failed'));
+      
+    } catch (err) {
+      console.error('❌ Error:', err);
+      alert('❌ Network error');
+    } finally {
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Create Driver Account';
+      }
+    }
+  }, true); // Use capture phase
+  
+  console.log('✅ INLINE handler attached!');
+});
+
+
+
+
+
+
+
+// (function(){
+//   // attach in load to ensure DOM + other scripts settled
+//   window.addEventListener('load', () => {
+//     const form = document.getElementById('driver-login-form');
+//     if (!form) {
+//       console.error('DRIVER-LOGIN: form not found (id=driver-login-form)');
+//       return;
+//     }
+//     // remove previously attached test handlers if any (best-effort)
+//     try { form.removeEventListener('submit', form._robustHandler, true); } catch(e){}
+
+//     async function robustHandler(e){
+//       // capture-phase: run first, prevent others
+//       e.preventDefault();
+//       e.stopImmediatePropagation();
+//       e.stopPropagation();
+
+//       console.log('DRIVER-LOGIN: submit captured (robust handler)');
+
+//       const getVal = id => (document.getElementById(id) || {}).value || '';
+
+//       const phone = getVal('driver-login-phone').trim();
+//       const email = getVal('driver-login-email').trim();
+//       const password = getVal('driver-login-password');
+
+//       console.log('DRIVER-LOGIN: collected', {phone, email, passwordLen: password.length});
+
+//       if (!password || (!phone && !email)) {
+//         alert('Enter phone or email and password');
+//         return;
+//       }
+
+//       const payload = phone ? {phone, password} : {email, password};
+
+//       try {
+//         const res = await fetch('/driver/login', {
+//           method: 'POST',
+//           headers: {'Content-Type': 'application/json'},
+//           credentials: 'include',
+//           body: JSON.stringify(payload),
+//           redirect: 'follow' // allow following redirects
+//         });
+
+//         console.log('DRIVER-LOGIN: fetch finished status=', res.status, 'ok=', res.ok, 'redirected=', res.redirected);
+
+//         // Try parse JSON safely
+//         let body;
+//         try {
+//           body = await res.json();
+//           console.log('DRIVER-LOGIN: parsed JSON:', body);
+//         } catch (je) {
+//           body = await res.text();
+//           console.log('DRIVER-LOGIN: received non-JSON body (first 800 chars):', (body||'').slice(0,800));
+//         }
+
+//         if (res.ok) {
+//           // prefer explicit redirect from server JSON
+//           if (body && typeof body === 'object' && body.redirect) {
+//             window.location.href = body.redirect;
+//             return;
+//           }
+//           // otherwise go to dashboard (safe fallback)
+//           window.location.href = '/driver/dashboard';
+//           return;
+//         }
+
+//         // non-ok: show message if present in JSON or text
+//         if (body && typeof body === 'object' && body.error) {
+//           alert(body.error);
+//         } else if (typeof body === 'string' && body.trim()) {
+//           alert('Server: ' + body.slice(0,200));
+//         } else {
+//           alert('Login failed: status ' + res.status);
+//         }
+
+//       } catch(err) {
+//         console.error('DRIVER-LOGIN: network/fetch error', err);
+//         alert('Network error — check server is running and CORS/session config.');
+//       }
+//     }
+
+//     // attach as capture-phase to run before bubble handlers and to override
+//     form.addEventListener('submit', robustHandler, true);
+//     form._robustHandler = robustHandler;
+//     console.log('DRIVER-LOGIN: robust handler attached (capture). Submit the form now.');
+//   });
+// })();
+console.log('🔧 Loading driver login handler...');
+
+window.addEventListener('load', function() {
+  const form = document.getElementById('driver-login-form');
+  
+  if (!form) {
+    console.warn('❌ driver-login-form not found');
+    return;
+  }
+  
+  console.log('✅ Found driver login form');
+  
+
+  const newForm = form.cloneNode(true);
+  form.parentNode.replaceChild(newForm, form);
+  const freshForm = document.getElementById('driver-login-form');
+  
+  freshForm.addEventListener('submit', async function(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    console.log('🔐 Driver login form submitted');
+    
+    const emailInput = document.getElementById('driver-login-email');
+    const phoneInput = document.getElementById('driver-login-phone');
+    const passwordInput = document.getElementById('driver-login-password');
+    
+    const email = emailInput ? emailInput.value.trim() : '';
+    const phone = phoneInput ? phoneInput.value.trim() : '';
+    const password = passwordInput ? passwordInput.value : '';
+    
+    console.log('📋 Login data:', { email: email || '(empty)', phone: phone || '(empty)', password: password ? '***' : '(empty)' });
+    
+    if (!password) {
+      alert('❌ Please enter your password');
+      return;
+    }
+    
+    if (!email && !phone) {
+      alert('❌ Please enter your email or phone number');
+      return;
+    }
+    
+   
+    const payload = email ? { email, password } : { phone, password };
+    
+    console.log('📤 Sending to /driver/login...');
+    
+    const submitBtn = freshForm.querySelector('button[type="submit"]');
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Signing in...';
+    }
+    
+    try {
+      const res = await fetch('/driver/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(payload)
+      });
+      
+      console.log('📥 Response status:', res.status);
+      
+      const data = await res.json().catch(() => ({}));
+      console.log('📥 Response data:', data);
+      
+      if (res.ok) {
+        console.log('✅ Login successful!');
+        alert('✅ Login successful! Redirecting to dashboard...');
+        
+      
+        setTimeout(() => {
+          window.location.href = data.redirect || '/driver/dashboard';
+        }, 500);
+        return;
+      }
+      
+      if (res.status === 401) {
+        alert('❌ Invalid email/phone or password');
+        return;
+      }
+      
+      alert('❌ ' + (data.error || 'Login failed'));
+      
+    } catch (err) {
+      console.error('❌ Network error:', err);
+      alert('❌ Network error. Make sure Flask is running.');
+    } finally {
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Sign In as Driver';
+      }
+    }
+  });
+  
+  console.log('✅ Driver login handler attached');
+});
+
+
+
+</script>
+
+
+  
 </body>
 
 </html>

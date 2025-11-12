@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Driver Dashboard - SwiftRide</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        :root {
+            --primary: #5fe32e;
+            --secondary: #1a1a1a;
+            --accent: #0077B6;
+            --light: #f8f9fa;
+            --dark: #212529;
+            --success: #28a745;
+            --danger: #dc3545;
+            --gray: #6c757d;
+        }
+
+        body {
+            background: linear-gradient(135deg, #000000, #2a541b);
+            min-height: 100vh;
+            padding: 20px;
+            position: relative;
+            overflow-x: hidden;
+            padding-top: 72px;
+            font-family: 'Inter', sans-serif;
+            color: white;
+        }
+
+        .navbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 30px;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(10px);
+        }
+
+        .nav-logo {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: var(--primary);
+            text-decoration: none;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+
+        .nav-links a {
+            color: rgb(0, 255, 21);
+            text-decoration: none;
+            font-weight: 500;
+            padding: 8px 15px;
+            border-radius: 20px;
+            transition: all 0.3s;
+        }
+
+        .nav-links a:hover {
+            background: rgb(230, 0, 123);
+        }
+
+        .nav-links a.active {
+            background: var(--primary);
+            color: var(--dark);
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .dashboard-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .driver-info {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .driver-avatar {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            color: white;
+        }
+
+        .driver-details h1 {
+            font-size: 1.8rem;
+            margin-bottom: 5px;
+        }
+
+        .driver-details p {
+            color: #aaa;
+            margin: 3px 0;
+        }
+
+        .status-selector {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .status-selector select {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid #444;
+            color: white;
+            padding: 10px 15px;
+            border-radius: 8px;
+            font-size: 1rem;
+        }
+
+        .stats-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            transition: transform 0.3s;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .stat-card i {
+            font-size: 2.5rem;
+            color: var(--primary);
+            margin-bottom: 15px;
+        }
+
+        .stat-card .number {
+            font-size: 2rem;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .stat-card .label {
+            color: #aaa;
+            font-size: 0.9rem;
+        }
+
+        .section-title {
+            font-size: 1.5rem;
+            margin: 30px 0 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        /* Map Container */
+        .map-container {
+            height: 500px;
+            background: #333;
+            border-radius: 12px;
+            margin: 20px 0;
+            overflow: hidden;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+        }
+
+        #driver-map {
+            width: 100%;
+            height: 100%;
+        }
+
+        .map-controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border-radius: 8px;
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 0.9rem;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: var(--dark);
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 1px solid var(--primary);
+            color: var(--primary);
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .rides-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .ride-card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 12px;
+            padding: 20px;
+            transition: transform 0.3s;
+        }
+
+        .ride-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .ride-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .ride-id {
+            font-weight: bold;
+            color: var(--primary);
+        }
+
+        .ride-status {
+            padding: 5px 12px;
+            border-radius: 10px;
+            font-size: 0.8rem;
+            background: var(--success);
+            color: white;
+        }
+
+        .ride-details {
+            margin: 15px 0;
+        }
+
+        .ride-detail {
+            display: flex;
+            justify-content: space-between;
+            margin: 8px 0;
+            font-size: 0.9rem;
+        }
+
+        .ride-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        @media (max-width: 768px) {
+            .dashboard-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 20px;
+            }
+
+            .stats-container {
+                grid-template-columns: 1fr;
+            }
+
+            .map-container {
+                height: 350px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <a href="/" class="nav-logo">SwiftRide</a>
+        <div class="nav-links">
+            <a href="#" class="nav-link active">Dashboard</a>
+            <a href="#" class="nav-link">Ride History</a>
+            <a href="#" class="nav-link">Earnings</a>
+            <a href="#" id="logout-btn" class="nav-link">Logout</a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <!-- Dashboard Header -->
+        <div class="dashboard-header">
+            <div class="driver-info">
+                <div class="driver-avatar">
+                    <i class="fas fa-user"></i>
+                </div>
+                <div class="driver-details">
+                    <h1>Driver Dashboard</h1>
+                    <p>Welcome back, <span id="driver-name">{{ driver.firstName or driver.full_name or 'Driver' }}</span></p>
+                    <p>Driver ID: <span id="driver-id">{{ driver.driver_id }}</span></p>
+                    <p>Vehicle: <span>{{ driver.vehicle_type or 'Not Set' }} - {{ driver.license_plate or 'N/A' }}</span></p>
+                </div>
+            </div>
+            <div class="status-selector">
+                <span>Status:</span>
+                <select id="driver-status">
+                    <option value="available" {% if driver.status == 'available' %}selected{% endif %}>Available</option>
+                    <option value="busy" {% if driver.status == 'busy' %}selected{% endif %}>Busy</option>
+                    <option value="offline" {% if driver.status == 'offline' %}selected{% endif %}>Offline</option>
+                </select>
+                <button class="btn btn-primary" id="update-status">Update</button>
+            </div>
+        </div>
+
+        <!-- Stats Cards -->
+        <div class="stats-container">
+            <div class="stat-card">
+                <i class="fas fa-car"></i>
+                <div class="number" id="total-rides">{{ stats.total_rides or 0 }}</div>
+                <div class="label">Total Rides</div>
+            </div>
+            <div class="stat-card">
+                <i class="fas fa-star"></i>
+                <div class="number" id="rating">{{ driver.rating or '5.0' }}</div>
+                <div class="label">Average Rating</div>
+            </div>
+            <div class="stat-card">
+                <i class="fas fa-wallet"></i>
+                <div class="number" id="earnings">₹{{ stats.total_earnings or 0 }}</div>
+                <div class="label">Total Earnings</div>
+            </div>
+            <div class="stat-card">
+                <i class="fas fa-map-marked-alt"></i>
+                <div class="number" id="status-display">{{ driver.status|title }}</div>
+                <div class="label">Current Status</div>
+            </div>
+        </div>
+
+        <!-- Map Section -->
+        <h2 class="section-title">📍 Live Location & Available Rides</h2>
+        <div class="map-controls">
+            <button class="btn btn-primary" id="locate-me">
+                <i class="fas fa-crosshairs"></i> Find My Location
+            </button>
+            <button class="btn btn-outline" id="show-rides">
+                <i class="fas fa-map-pin"></i> Show Available Rides
+            </button>
+            <button class="btn btn-outline" id="refresh-map">
+                <i class="fas fa-sync-alt"></i> Refresh Map
+            </button>
+        </div>
+        <div class="map-container">
+            <div id="driver-map"></div>
+        </div>
+
+        <!-- Available Rides -->
+        <h2 class="section-title">🚗 Available Rides</h2>
+        <div class="rides-container" id="available-rides">
+            {% if active_rides and active_rides|length > 0 %}
+                {% for ride in active_rides %}
+                <div class="ride-card">
+                    <div class="ride-header">
+                        <div class="ride-id">Ride #{{ ride.ride_id }}</div>
+                        <div class="ride-status">{{ ride.status|title }}</div>
+                    </div>
+                    <div class="ride-details">
+                        <div class="ride-detail">
+                            <span><i class="fas fa-map-marker-alt"></i> Pickup</span>
+                            <span>{{ ride.pickup_address or 'Address N/A' }}</span>
+                        </div>
+                        <div class="ride-detail">
+                            <span><i class="fas fa-flag"></i> Dropoff</span>
+                            <span>{{ ride.dropoff_address or 'Address N/A' }}</span>
+                        </div>
+                        <div class="ride-detail">
+                            <span><i class="fas fa-clock"></i> Requested</span>
+                            <span>{{ ride.requested_at.strftime('%I:%M %p') if ride.requested_at else 'N/A' }}</span>
+                        </div>
+                    </div>
+                    <div class="ride-actions">
+                        <button class="btn btn-outline" onclick="viewRideOnMap({{ ride.pickup_lat }}, {{ ride.pickup_lng }}, {{ ride.drop_lat }}, {{ ride.drop_lng }})">View on Map</button>
+                        <button class="btn btn-primary" onclick="acceptRide({{ ride.ride_id }})">Accept Ride</button>
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="ride-card">
+                    <p style="text-align: center; color: #aaa;">No active rides at the moment. Available rides will appear here.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        let driverMap;
+        let driverMarker;
+        let rideMarkers = [];
+        let currentPosition = { lat: 18.5204, lng: 73.8567 }; // Default: Pune
+
+        // Initialize map
+        function initDriverMap() {
+            if (driverMap) {
+                driverMap.remove();
+            }
+
+            driverMap = L.map('driver-map').setView([currentPosition.lat, currentPosition.lng], 13);
+
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 19,
+                attribution: '© OpenStreetMap contributors'
+            }).addTo(driverMap);
+
+            // Add driver marker
+            const driverIcon = L.divIcon({
+                className: 'custom-marker',
+                html: '<div style="background: #10b981; width: 40px; height: 40px; border-radius: 50%; border: 4px solid white; box-shadow: 0 2px 8px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center;"><i class="fas fa-car" style="color: white; font-size: 18px;"></i></div>',
+                iconSize: [40, 40],
+                iconAnchor: [20, 20],
+            });
+
+            driverMarker = L.marker([currentPosition.lat, currentPosition.lng], { icon: driverIcon })
+                .addTo(driverMap)
+                .bindPopup('<b>🚗 You are here</b><br>Ready to accept rides!')
+                .openPopup();
+        }
+
+        // Get driver's current location
+        function locateDriver() {
+            const btn = document.getElementById('locate-me');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Locating...';
+
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        currentPosition = {
+                            lat: position.coords.latitude,
+                            lng: position.coords.longitude
+                        };
+
+                        driverMap.setView([currentPosition.lat, currentPosition.lng], 15);
+                        driverMarker.setLatLng([currentPosition.lat, currentPosition.lng]);
+                        driverMarker.openPopup();
+
+                        btn.disabled = false;
+                        btn.innerHTML = '<i class="fas fa-crosshairs"></i> Find My Location';
+                    },
+                    (error) => {
+                        console.error('Location error:', error);
+                        alert('Could not get your location. Please enable location services.');
+                        btn.disabled = false;
+                        btn.innerHTML = '<i class="fas fa-crosshairs"></i> Find My Location';
+                    }
+                );
+            } else {
+                alert('Geolocation is not supported by your browser');
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-crosshairs"></i> Find My Location';
+            }
+        }
+
+        // Show available rides on map
+        async function showAvailableRides() {
+            // Clear existing ride markers
+            rideMarkers.forEach(marker => driverMap.removeLayer(marker));
+            rideMarkers = [];
+
+            try {
+                const response = await fetch('/driver/available_rides', {
+                    credentials: 'include'
+                });
+                const data = await response.json();
+
+                if (data.rides && data.rides.length > 0) {
+                    data.rides.forEach(ride => {
+                        const rideIcon = L.divIcon({
+                            className: 'custom-marker',
+                            html: '<div style="background: #ef4444; width: 35px; height: 35px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 8px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center;"><i class="fas fa-user" style="color: white; font-size: 16px;"></i></div>',
+                            iconSize: [35, 35],
+                            iconAnchor: [17.5, 17.5],
+                        });
+
+                        const marker = L.marker([ride.pickup_lat, ride.pickup_lng], { icon: rideIcon })
+                            .addTo(driverMap)
+                            .bindPopup(`
+                                <b>Ride Request #${ride.ride_id}</b><br>
+                                Passenger: ${ride.user_firstName} ${ride.user_lastName}<br>
+                                Pickup: ${ride.pickup_address || 'Address N/A'}<br>
+                                <button onclick="acceptRide(${ride.ride_id})" style="margin-top: 8px; padding: 6px 12px; background: #10b981; color: white; border: none; border-radius: 6px; cursor: pointer;">Accept</button>
+                            `);
+
+                        rideMarkers.push(marker);
+                    });
+
+                    alert(`Found ${data.rides.length} available rides nearby!`);
+                } else {
+                    alert('No available rides at the moment.');
+                }
+            } catch (error) {
+                console.error('Error fetching rides:', error);
+                alert('Failed to load available rides.');
+            }
+        }
+
+        // View specific ride on map
+        function viewRideOnMap(pickupLat, pickupLng, dropLat, dropLng) {
+            // Clear existing markers
+            rideMarkers.forEach(marker => driverMap.removeLayer(marker));
+            rideMarkers = [];
+
+            // Add pickup marker
+            const pickupIcon = L.divIcon({
+                className: 'custom-marker',
+                html: '<div style="background: #10b981; width: 35px; height: 35px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 8px rgba(0,0,0,0.3);"></div>',
+                iconSize: [35, 35],
+            });
+
+            const pickupMarker = L.marker([pickupLat, pickupLng], { icon: pickupIcon })
+                .addTo(driverMap)
+                .bindPopup('<b>📍 Pickup Location</b>');
+            rideMarkers.push(pickupMarker);
+
+            // Add dropoff marker
+            const dropIcon = L.divIcon({
+                className: 'custom-marker',
+                html: '<div style="background: #ef4444; width: 35px; height: 35px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 8px rgba(0,0,0,0.3);"></div>',
+                iconSize: [35, 35],
+            });
+
+            const dropMarker = L.marker([dropLat, dropLng], { icon: dropIcon })
+                .addTo(driverMap)
+                .bindPopup('<b>🎯 Drop Location</b>');
+            rideMarkers.push(dropMarker);
+
+            // Fit map to show both markers
+            const bounds = L.latLngBounds([
+                [pickupLat, pickupLng],
+                [dropLat, dropLng]
+            ]);
+            driverMap.fitBounds(bounds, { padding: [50, 50] });
+        }
+
+        // Accept ride
+        async function acceptRide(rideId) {
+            if (!confirm(`Accept ride #${rideId}?`)) return;
+
+            try {
+                const response = await fetch('/driver/accept_ride', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ ride_id: rideId })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    alert('✅ Ride accepted successfully!');
+                    location.reload();
+                } else {
+                    alert('❌ ' + (data.error || 'Failed to accept ride'));
+                }
+            } catch (error) {
+                console.error('Error accepting ride:', error);
+                alert('❌ Network error');
+            }
+        }
+
+        // Update driver status
+        document.getElementById('update-status').addEventListener('click', async function() {
+            const status = document.getElementById('driver-status').value;
+            
+            try {
+                const response = await fetch('/driver/update_status', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ status })
+                });
+
+                if (response.ok) {
+                    alert('✅ Status updated to: ' + status);
+                    document.getElementById('status-display').textContent = status.charAt(0).toUpperCase() + status.slice(1);
+                } else {
+                    alert('❌ Failed to update status');
+                }
+            } catch (error) {
+                console.error('Error updating status:', error);
+                alert('❌ Network error');
+            }
+        });
+
+        // Logout
+        document.getElementById('logout-btn').addEventListener('click', async function(e) {
+            e.preventDefault();
+            if (confirm('Are you sure you want to logout?')) {
+                try {
+                    const response = await fetch('/driver/logout', {
+                        method: 'POST',
+                        credentials: 'include'
+                    });
+                    if (response.ok) {
+                        window.location.href = '/';
+                    }
+                } catch (error) {
+                    console.error('Logout error:', error);
+                }
+            }
+        });
+
+        // Event listeners
+        document.getElementById('locate-me').addEventListener('click', locateDriver);
+        document.getElementById('show-rides').addEventListener('click', showAvailableRides);
+        document.getElementById('refresh-map').addEventListener('click', () => {
+            initDriverMap();
+            locateDriver();
+        });
+
+        // Initialize map when page loads
+        window.addEventListener('load', () => {
+            initDriverMap();
+            // Auto-locate driver after 1 second
+            setTimeout(locateDriver, 1000);
+        });
+    </script>
+</body>
+</html>

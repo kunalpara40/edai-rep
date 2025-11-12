@@ -1,0 +1,129 @@
+-- -- SwiftRide Database Schema
+
+-- -- Create database
+-- CREATE DATABASE IF NOT EXISTS swiftride;
+-- USE swiftride;
+
+-- -- Users table (Passengers)
+-- CREATE TABLE users (
+--     id INT AUTO_INCREMENT PRIMARY KEY,
+--     firstName VARCHAR(50) NOT NULL,
+--     lastName VARCHAR(50) NOT NULL,
+--     email VARCHAR(100) UNIQUE NOT NULL,
+--     phone VARCHAR(15),
+--     password VARCHAR(255) NOT NULL,
+--     address TEXT,
+--     state VARCHAR(50),
+--     city VARCHAR(50),
+--     zipCode VARCHAR(10),
+--     preferredPayment VARCHAR(20),
+--     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+--     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+-- );
+
+-- -- Drivers table
+-- CREATE TABLE drivers (
+--     driver_id INT AUTO_INCREMENT PRIMARY KEY,
+--     firstName VARCHAR(50) NOT NULL,
+--     lastName VARCHAR(50) NOT NULL,
+--     email VARCHAR(100) UNIQUE NOT NULL,
+--     phone VARCHAR(15),
+--     password VARCHAR(255) NOT NULL,
+--     license_number VARCHAR(50) UNIQUE NOT NULL,
+--     vehicle_registration VARCHAR(50) UNIQUE NOT NULL,
+--     vehicle_type VARCHAR(50),
+--     vehicle_make VARCHAR(50),
+--     vehicle_model VARCHAR(50),
+--     vehicle_year INT,
+--     license_plate VARCHAR(20),
+--     address TEXT,
+--     state VARCHAR(50),
+--     city VARCHAR(50),
+--     zipCode VARCHAR(10),
+--     status ENUM('available', 'busy', 'offline') DEFAULT 'offline',
+--     rating DECIMAL(3,2) DEFAULT 0.00,
+--     total_rides INT DEFAULT 0,
+--     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+--     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+-- );
+
+-- -- Rides table
+-- CREATE TABLE rides (
+--     ride_id INT AUTO_INCREMENT PRIMARY KEY,
+--     user_id INT NOT NULL,
+--     driver_id INT NULL,
+--     pickup_lat DECIMAL(10, 8) NOT NULL,
+--     pickup_lng DECIMAL(11, 8) NOT NULL,
+--     drop_lat DECIMAL(10, 8) NOT NULL,
+--     drop_lng DECIMAL(11, 8) NOT NULL,
+--     pickup_address TEXT,
+--     dropoff_address TEXT,
+--     status ENUM('requested', 'assigned', 'accepted', 'arriving', 'in_progress', 'completed', 'cancelled') DEFAULT 'requested',
+--     fare DECIMAL(10, 2) DEFAULT 0.00,
+--     distance_km DECIMAL(10, 2) DEFAULT 0.00,
+--     estimated_time_minutes INT DEFAULT 0,
+--     actual_time_minutes INT DEFAULT 0,
+--     requested_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+--     assigned_at TIMESTAMP NULL,
+--     accepted_at TIMESTAMP NULL,
+--     started_at TIMESTAMP NULL,
+--     completed_at TIMESTAMP NULL,
+--     cancelled_at TIMESTAMP NULL,
+--     payment_method VARCHAR(20),
+--     payment_status ENUM('pending', 'completed', 'failed') DEFAULT 'pending',
+--     rating DECIMAL(3,2) DEFAULT NULL,
+--     feedback TEXT,
+--     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+--     FOREIGN KEY (driver_id) REFERENCES drivers(driver_id) ON DELETE SET NULL
+-- );
+
+-- -- Payments table
+-- CREATE TABLE payments (
+--     payment_id INT AUTO_INCREMENT PRIMARY KEY,
+--     ride_id INT NOT NULL,
+--     user_id INT NOT NULL,
+--     amount DECIMAL(10, 2) NOT NULL,
+--     payment_method VARCHAR(20),
+--     payment_status ENUM('pending', 'completed', 'failed', 'refunded') DEFAULT 'pending',
+--     transaction_id VARCHAR(100),
+--     payment_gateway VARCHAR(50),
+--     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+--     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+--     FOREIGN KEY (ride_id) REFERENCES rides(ride_id) ON DELETE CASCADE,
+--     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+-- );
+
+-- -- Admin users table
+-- CREATE TABLE admins (
+--     admin_id INT AUTO_INCREMENT PRIMARY KEY,
+--     username VARCHAR(50) UNIQUE NOT NULL,
+--     email VARCHAR(100) UNIQUE NOT NULL,
+--     password VARCHAR(255) NOT NULL,
+--     role ENUM('super_admin', 'admin', 'support') DEFAULT 'admin',
+--     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+--     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+-- );
+
+-- -- Ride tracking (for real-time location updates)
+-- CREATE TABLE ride_tracking (
+--     tracking_id INT AUTO_INCREMENT PRIMARY KEY,
+--     ride_id INT NOT NULL,
+--     driver_lat DECIMAL(10, 8) NOT NULL,
+--     driver_lng DECIMAL(11, 8) NOT NULL,
+--     timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+--     FOREIGN KEY (ride_id) REFERENCES rides(ride_id) ON DELETE CASCADE
+-- );
+
+-- -- Insert sample admin user
+-- INSERT INTO admins (username, email, password, role) VALUES 
+-- ('admin', 'admin@swiftride.com', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBPj/RK.PZvO.S', 'super_admin'); -- password: admin123
+
+-- -- Insert sample users
+-- INSERT INTO users (firstName, lastName, email, phone, password, address, state, city, zipCode, preferredPayment) VALUES 
+-- ('John', 'Doe', 'john.doe@example.com', '1234567890', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBPj/RK.PZvO.S', '123 Main St', 'California', 'Los Angeles', '90210', 'credit_card'),
+-- ('Jane', 'Smith', 'jane.smith@example.com', '0987654321', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBPj/RK.PZvO.S', '456 Oak Ave', 'California', 'San Francisco', '94102', 'paypal');
+
+-- -- Insert sample drivers
+-- INSERT INTO drivers (firstName, lastName, email, phone, password, license_number, vehicle_registration, vehicle_type, vehicle_make, vehicle_model, vehicle_year, license_plate, address, state, city, zipCode, status) VALUES 
+-- ('Mike', 'Johnson', 'mike.johnson@example.com', '1112223333', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBPj/RK.PZvO.S', 'DL123456', 'VR789012', 'sedan', 'Toyota', 'Camry', 2020, 'ABC123', '789 Pine St', 'California', 'Los Angeles', '90210', 'available'),
+-- ('Sarah', 'Williams', 'sarah.williams@example.com', '4445556666', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBPj/RK.PZvO.S', 'DL789012', 'VR345678', 'suv', 'Honda', 'CR-V', 2019, 'XYZ789', '321 Elm St', 'California', 'San Francisco', '94102', 'offline');

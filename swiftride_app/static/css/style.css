@@ -154,7 +154,7 @@
     .page-container.active {
       display: flex;
       justify-content: center;
-      /* align-items: center; */
+     
       align-items: flex-start;
         min-height: calc(100vh - 72px); /* Use available viewport height */
     padding: 20px;
@@ -162,7 +162,7 @@
     width: 100%; /* Important: ensure it takes full width */
     }
 
-    /* Home page */
+    
     .hero-section {
       text-align: center;
       color: white;
@@ -1578,3 +1578,161 @@
   from { opacity: 0; transform: translateY(-5px); }
   to { opacity: 1; transform: translateY(0); }
 }
+
+
+/* ===== DRIVER LOGIN PAGE FIX ===== */
+/* #driver-login-page {
+  display: none;
+}
+
+#driver-login-page.active {
+  display: flex !important;
+  justify-content: center;
+  align-items: flex-start;
+  min-height: calc(100vh - 72px);
+  padding: 20px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+
+#driver-login-page .main-container {
+  display: flex !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  max-width: 1100px;
+  width: 100%;
+  background: #fff;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 15px 30px rgba(0, 0, 0, 0.3);
+}
+
+
+#driver-login-page .form-section {
+  flex: 1.2;
+  padding: 40px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  overflow-y: auto;
+  max-height: 90vh;
+}
+
+
+#driver-login-page .brand-section {
+  flex: 1;
+  background: linear-gradient(to bottom right, var(--secondary), var(--accent));
+  color: rgb(255, 255, 255);
+  padding: 40px;
+  display: flex !important;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+
+#driver-login-page .input-group {
+  display: block !important;
+  margin-bottom: 15px;
+}
+
+#driver-login-page .input-field {
+  display: flex !important;
+  width: 100%;
+}
+
+
+#driver-login-page .btn-group {
+  display: flex !important;
+}
+
+#driver-login-page .btn {
+  display: block !important;
+} */
+/* ===== DRIVER LOGIN PAGE FIX ===== */
+
+/* Hide all pages by default */
+/* .page-container {
+  display: none !important;
+  opacity: 0;
+  visibility: hidden;
+}
+
+
+.page-container.active {
+  display: flex !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  justify-content: center;
+  align-items: flex-start;
+  min-height: calc(100vh - 72px);
+  padding: 20px;
+  width: 100%;
+  box-sizing: border-box;
+  animation: fadeIn 0.5s ease;
+}
+
+
+#driver-login-page.active .main-container {
+  display: flex !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+
+#driver-login-page .form-section {
+  display: flex !important;
+  flex-direction: column;
+}
+
+
+#driver-login-page .input-group {
+  display: block !important;
+}
+
+
+#driver-login-page .input-field {
+  display: flex !important;
+}
+
+#driver-login-page .btn-group {
+  display: flex !important;
+}
+
+#driver-login-page .btn {
+  display: block !important;
+}
+
+
+#driver-login-page.active {
+  border: 2px solid red; 
+}
+
+#driver-login-page.active .main-container {
+  border: 2px solid green; 
+}
+
+#driver-login-page.active .form-section {
+  border: 2px solid blue; 
+}  */
+
+
+/* CRITICAL FIX for driver-login-page */
+/* #driver-login-page {
+  display: none;
+}
+
+#driver-login-page.active {
+  display: flex !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+#driver-login-page.active .main-container,
+#driver-login-page.active .form-section,
+#driver-login-page.active .brand-section {
+  display: flex !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+} */
