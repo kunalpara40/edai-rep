@@ -1935,3 +1935,473 @@ function showPage(page) {
         }, 100);
       }
     }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+     let rideMap, pickupMarker, dropMarker, routeControl;
+    let pickupTimeout = null;
+    let dropoffTimeout = null;
+
+    // Initialize map when ride page loads
+    function initRideMap(containerId = "map-container") {
+      // Always create a new map instance to avoid conflicts
+      if (rideMap) {
+        try {
+          rideMap.remove();
+        } catch (e) {
+          console.log("Error removing map:", e);
+        }
+        rideMap = null;
+      }
+      
+      // Create new map for the specified container
+      const container = document.getElementById(containerId);
+      if (container) {
+        rideMap = L.map(containerId).setView([18.5204, 73.8567], 12);
+
+        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+          maxZoom: 19,
+          attribution: "&copy; OpenStreetMap contributors",
+        }).addTo(rideMap);
+        
+        // Ensure map resizes properly
+        setTimeout(() => {
+          if (rideMap) {
+            try {
+              rideMap.invalidateSize();
+            } catch (e) {
+              console.log("Error invalidating map size:", e);
+            }
+          }
+        }, 100);
+      }
+    }
+
+    // Convert place name → coordinates using OpenStreetMap Nominatim
+    async function getCoordinates(location) {
+      try {
+        const response = await fetch(
+          `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
+            location
+          )}&limit=1`,
+          {
+            headers: {
+              "User-Agent": "RideShareApp/1.0",
+            },
+          }
+        );
+        const data = await response.json();
+        if (data.length > 0) {
+          return [parseFloat(data[0].lat), parseFloat(data[0].lon)];
+        }
+        return null;
+      } catch (err) {
+        console.error("Error fetching coordinates:", err);
+        return null;
+      }
+    }
+
+    // 🧠 Live pickup marker update
+    async function updatePickupLocation(query, containerId = "map-container") {
+      if (!query || query.trim() === "") {
+        // Initialize map to clear any existing markers
+        initRideMap(containerId);
+        
+        if (pickupMarker && rideMap) {
+          rideMap.removeLayer(pickupMarker);
+          pickupMarker = null;
+          if (routeControl) {
+            rideMap.removeControl(routeControl);
+            routeControl = null;
+          }
+        }
+        return;
+      }
+
+      const coords = await getCoordinates(query);
+      if (!coords) {
+        console.log("Could not find location for:", query);
+        return;
+      }
+
+      initRideMap(containerId);
+
+      // Remove existing pickup marker if it exists
+      if (pickupMarker && rideMap) {
+        try {
+          rideMap.removeLayer(pickupMarker);
+        } catch (e) {
+          console.log("Error removing pickup marker:", e);
+        }
+        pickupMarker = null;
+      }
+
+      const pickupIcon = L.divIcon({
+        className: "custom-marker",
+        html: '<div style="background: #10b981; width: 30px; height: 30px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 8px rgba(0,0,0,0.3);"></div>',
+        iconSize: [30, 30],
+        iconAnchor: [15, 15],
+      });
+
+      if (rideMap) {
+        pickupMarker = L.marker(coords, { icon: pickupIcon })
+          .addTo(rideMap)
+          .bindPopup(`<b>📍 Pickup</b><br>${query}`)
+          .openPopup();
+
+        rideMap.setView(coords, 14);
+        updateRoute();
+      }
+    }
+
+    // 🧠 Live dropoff marker update
+    async function updateDropoffLocation(query, containerId = "map-container") {
+      if (!query || query.trim() === "") {
+        // Initialize map to clear any existing markers
+        initRideMap(containerId);
+        
+        if (dropMarker && rideMap) {
+          rideMap.removeLayer(dropMarker);
+          dropMarker = null;
+        }
+        if (routeControl && rideMap) {
+          rideMap.removeControl(routeControl);
+          routeControl = null;
+        }
+        const priceOutputId = containerId === "ride-map-container" ? "ride-price-output" : "price-output";
+        const priceOutput = document.getElementById(priceOutputId);
+        if (priceOutput) priceOutput.textContent = "";
+        return;
+      }
+
+      const coords = await getCoordinates(query);
+      if (!coords) {
+        console.log("Could not find location for:", query);
+        return;
+      }
+
+      initRideMap(containerId);
+
+      // Remove existing drop marker if it exists
+      if (dropMarker && rideMap) {
+        try {
+          rideMap.removeLayer(dropMarker);
+        } catch (e) {
+          console.log("Error removing drop marker:", e);
+        }
+        dropMarker = null;
+      }
+
+      const dropIcon = L.divIcon({
+        className: "custom-marker",
+        html: '<div style="background: #ef4444; width: 30px; height: 30px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 8px rgba(0,0,0,0.3);"></div>',
+        iconSize: [30, 30],
+        iconAnchor: [15, 15],
+      });
+
+      if (rideMap) {
+        dropMarker = L.marker(coords, { icon: dropIcon })
+          .addTo(rideMap)
+          .bindPopup(`<b>🎯 Dropoff</b><br>${query}`)
+          .openPopup();
+
+        updateRoute();
+      }
+    }
+
+    // 🛣️ Update route with ACTUAL ROAD PATH (not straight line!)
+    async function updateRoute() {
+      if (!pickupMarker || !dropMarker || !rideMap) return;
+
+      const pickupCoords = pickupMarker.getLatLng();
+      const dropCoords = dropMarker.getLatLng();
+
+      // Remove old route control if exists
+      if (routeControl) {
+        try {
+          rideMap.removeControl(routeControl);
+        } catch (e) {
+          console.log("Error removing route control:", e);
+        }
+        routeControl = null;
+      }
+
+      // Create route using Leaflet Routing Machine with OSRM
+      routeControl = L.Routing.control({
+        waypoints: [
+          L.latLng(pickupCoords.lat, pickupCoords.lng),
+          L.latLng(dropCoords.lat, dropCoords.lng)
+        ],
+        routeWhileDragging: false,
+        show: false,
+        addWaypoints: false,
+        router: L.Routing.osrmv1({
+          serviceUrl: 'https://router.project-osrm.org/route/v1'
+        }),
+        lineOptions: {
+          styles: [
+            { 
+              color: '#3b82f6', 
+              opacity: 0.8, 
+              weight: 6 
+            }
+          ]
+        },
+        createMarker: function() { 
+          return null; 
+        }
+      }).addTo(rideMap);
+
+      // When route is calculated, display distance and price
+      routeControl.on('routesfound', function(e) {
+        const routes = e.routes;
+        const route = routes[0];
+
+        // Get actual road distance in kilometers
+        const distanceKm = (route.summary.totalDistance / 1000).toFixed(2);
+        const durationMin = Math.round(route.summary.totalTime / 60);
+        const price = (distanceKm * 15).toFixed(2);
+
+        // Determine which price output to use based on current map
+        const containerId = rideMap._container.id;
+        const priceOutputId = containerId === "ride-map-container" ? "ride-price-output" : "price-output";
+        const priceOutput = document.getElementById(priceOutputId);
+        
+        if (priceOutput) {
+          priceOutput.innerHTML = `
+            <strong>Distance (by road):</strong> ${distanceKm} km<br>
+            <strong>Estimated Time:</strong> ${durationMin} minutes<br>
+            <strong>Estimated Price:</strong> ₹${price}
+            <div style="margin-top: 8px; padding: 6px; background: #10b98120; border-left: 3px solid #10b981; font-size: 12px;">
+              ✅ <em>Route follows actual roads</em>
+            </div>
+          `;
+        }
+
+        console.log("✅ Road route calculated!");
+        console.log("📏 Distance:", distanceKm, "km");
+        console.log("⏱️ Duration:", durationMin, "minutes");
+      });
+
+      // Handle errors
+      routeControl.on('routingerror', function(e) {
+        console.error('❌ Routing error:', e.error);
+
+        // Determine which price output to use based on current map
+        const containerId = rideMap._container.id;
+        const priceOutputId = containerId === "ride-map-container" ? "ride-price-output" : "price-output";
+        const priceOutput = document.getElementById(priceOutputId);
+        
+        if (priceOutput) {
+          priceOutput.innerHTML = `
+            <div style="color: #ef4444;">
+              ⚠️ Unable to calculate road route. Please try again or check your internet connection.
+            </div>
+          `;
+        }
+      });
+    }
+
+    // Function to show price & route (triggered by button)
+    async function showPrice() {
+      // Determine which form we're working with based on which button was clicked
+      const clickedButton = event && event.target ? event.target : null;
+      const isRidePage = clickedButton ? clickedButton.closest('#ride-page') !== null : false;
+      
+      // Get the appropriate input elements
+      const pickupInputId = isRidePage ? "ride-pickup" : "pickup";
+      const dropoffInputId = isRidePage ? "ride-dropoff" : "dropoff";
+      const containerId = isRidePage ? "ride-map-container" : "map-container";
+      
+      const pickup = document.getElementById(pickupInputId).value.trim();
+      const drop = document.getElementById(dropoffInputId).value.trim();
+
+      if (!pickup || !drop) {
+        alert("⚠️ Please enter both pickup and dropoff locations.");
+        return;
+      }
+
+      initRideMap(containerId);
+
+      const pickupCoords = await getCoordinates(pickup);
+      const dropCoords = await getCoordinates(drop);
+
+      if (!pickupCoords || !dropCoords) {
+        alert("❌ Unable to locate one or both locations. Please try again.");
+        return;
+      }
+
+      // Clear existing markers
+      if (pickupMarker && rideMap) {
+        try {
+          rideMap.removeLayer(pickupMarker);
+        } catch (e) {
+          console.log("Error removing pickup marker:", e);
+        }
+        pickupMarker = null;
+      }
+      
+      if (dropMarker && rideMap) {
+        try {
+          rideMap.removeLayer(dropMarker);
+        } catch (e) {
+          console.log("Error removing drop marker:", e);
+        }
+        dropMarker = null;
+      }
+      
+      if (routeControl && rideMap) {
+        try {
+          rideMap.removeControl(routeControl);
+        } catch (e) {
+          console.log("Error removing route control:", e);
+        }
+        routeControl = null;
+      }
+
+      const pickupIcon = L.divIcon({
+        className: "custom-marker",
+        html: '<div style="background: #10b981; width: 30px; height: 30px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 8px rgba(0,0,0,0.3);"></div>',
+        iconSize: [30, 30],
+        iconAnchor: [15, 15],
+      });
+
+      const dropIcon = L.divIcon({
+        className: "custom-marker",
+        html: '<div style="background: #ef4444; width: 30px; height: 30px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 8px rgba(0,0,0,0.3);"></div>',
+        iconSize: [30, 30],
+        iconAnchor: [15, 15],
+      });
+
+      if (rideMap) {
+        pickupMarker = L.marker(pickupCoords, { icon: pickupIcon })
+          .addTo(rideMap)
+          .bindPopup(`<b>📍 Pickup</b><br>${pickup}`);
+
+        dropMarker = L.marker(dropCoords, { icon: dropIcon })
+          .addTo(rideMap)
+          .bindPopup(`<b>🎯 Dropoff</b><br>${drop}`);
+
+        updateRoute();
+      }
+    }
+
+    // 🧩 Initialize live location updates
+    function initLiveLocationUpdate() {
+      // Home page inputs
+      const pickupInput = document.getElementById("pickup");
+      const dropoffInput = document.getElementById("dropoff");
+      
+      // Ride page inputs
+      const ridePickupInput = document.getElementById("ride-pickup");
+      const rideDropoffInput = document.getElementById("ride-dropoff");
+
+      if (pickupInput) {
+        pickupInput.addEventListener("input", () => {
+          clearTimeout(pickupTimeout);
+          pickupTimeout = setTimeout(() => {
+            const query = pickupInput.value.trim();
+            updatePickupLocation(query, "map-container");
+          }, 1000);
+        });
+      }
+
+      if (dropoffInput) {
+        dropoffInput.addEventListener("input", () => {
+          clearTimeout(dropoffTimeout);
+          dropoffTimeout = setTimeout(() => {
+            const query = dropoffInput.value.trim();
+            updateDropoffLocation(query, "map-container");
+          }, 1000);
+        });
+      }
+      
+      if (ridePickupInput) {
+        ridePickupInput.addEventListener("input", () => {
+          clearTimeout(pickupTimeout);
+          pickupTimeout = setTimeout(() => {
+            const query = ridePickupInput.value.trim();
+            updatePickupLocation(query, "ride-map-container");
+          }, 1000);
+        });
+      }
+
+      if (rideDropoffInput) {
+        rideDropoffInput.addEventListener("input", () => {
+          clearTimeout(dropoffTimeout);
+          dropoffTimeout = setTimeout(() => {
+            const query = rideDropoffInput.value.trim();
+            updateDropoffLocation(query, "ride-map-container");
+          }, 1000);
+        });
+      }
+    }
+
+    // Initialize when DOM is ready
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", initLiveLocationUpdate);
+    } else {
+      initLiveLocationUpdate();
+    }

@@ -713,39 +713,129 @@ def driver_logout():
     return jsonify({"message": "Driver logged out"}), 200
 
 # ==================== RIDES ====================
+# @app.route("/create_ride", methods=["POST"])
+# def create_ride():
+#     user_id = session.get("user_id")
+#     if not user_id:
+#         return jsonify({"error": "Not logged in"}), 401
+
+#     data = request.get_json() or {}
+#     required = ["pickup_lat", "pickup_lng", "drop_lat", "drop_lng"]
+    
+#     for r in required:
+#         if r not in data:
+#             return jsonify({"error": f"{r} is required"}), 400
+
+#     try:
+#         conn = get_db_connection()
+#         cursor = conn.cursor()
+#         sql = """
+#         INSERT INTO rides (user_id, pickup_lat, pickup_lng, drop_lat, drop_lng, status, requested_at)
+#         VALUES (%s, %s, %s, %s, %s, 'requested', NOW())
+#         """
+#         cursor.execute(sql, (user_id, data["pickup_lat"], data["pickup_lng"], 
+#                             data["drop_lat"], data["drop_lng"]))
+#         conn.commit()
+#         ride_id = cursor.lastrowid
+#         cursor.close()
+#         conn.close()
+#         return jsonify({"message": "Ride requested", "ride_id": ride_id}), 201
+#     except Exception as e:
+#         print(f"Create ride error: {e}")
+#         return jsonify({"error": "Create ride failed"}), 500
+
+# @app.route("/driver/available_rides", methods=["GET"])
+# def driver_available_rides():
+#     driver_id = session.get("driver_id")
+#     if not driver_id:
+#         return jsonify({"error": "Not logged in"}), 401
+
+#     try:
+#         conn = get_db_connection()
+#         cursor = conn.cursor(dictionary=True)
+#         cursor.execute("""
+#             SELECT r.ride_id, r.user_id, r.pickup_lat, r.pickup_lng, r.drop_lat, r.drop_lng, 
+#                    r.pickup_address, r.dropoff_address, r.requested_at, r.fare,
+#                    u.firstName as user_firstName, u.lastName as user_lastName, u.phone as user_phone
+#             FROM rides r
+#             JOIN users u ON r.user_id = u.id
+#             WHERE r.status='requested'
+#             ORDER BY r.requested_at ASC
+#             LIMIT 10
+#         """)
+#         rides = cursor.fetchall()
+#         cursor.close()
+#         conn.close()
+#         return jsonify({"rides": rides}), 200
+#     except Exception as e:
+#         print(f"Get rides error: {e}")
+#         return jsonify({"error": "Failed to fetch rides"}), 500
+# Add these routes to your app.py file
+
+# --- RIDE / DRIVER routes (updated) ---
+
 @app.route("/create_ride", methods=["POST"])
 def create_ride():
+    """User creates a new ride request"""
     user_id = session.get("user_id")
     if not user_id:
         return jsonify({"error": "Not logged in"}), 401
 
     data = request.get_json() or {}
-    required = ["pickup_lat", "pickup_lng", "drop_lat", "drop_lng"]
     
-    for r in required:
-        if r not in data:
-            return jsonify({"error": f"{r} is required"}), 400
+    # Required fields
+    required = ["pickup_lat", "pickup_lng", "drop_lat", "drop_lng", 
+                "pickup_address", "dropoff_address", "distance", "fare"]
+    
+    for field in required:
+        if field not in data:
+            return jsonify({"error": f"{field} is required"}), 400
 
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
+        
         sql = """
-        INSERT INTO rides (user_id, pickup_lat, pickup_lng, drop_lat, drop_lng, status, requested_at)
-        VALUES (%s, %s, %s, %s, %s, 'requested', NOW())
+        INSERT INTO rides 
+        (user_id, pickup_lat, pickup_lng, drop_lat, drop_lng, 
+         pickup_address, dropoff_address, distance, fare, status, requested_at)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, 'requested', NOW())
         """
-        cursor.execute(sql, (user_id, data["pickup_lat"], data["pickup_lng"], 
-                            data["drop_lat"], data["drop_lng"]))
+        
+        values = (
+            user_id,
+            data["pickup_lat"],
+            data["pickup_lng"],
+            data["drop_lat"],
+            data["drop_lng"],
+            data["pickup_address"],
+            data["dropoff_address"],
+            data["distance"],
+            data["fare"]
+        )
+        
+        cursor.execute(sql, values)
         conn.commit()
         ride_id = cursor.lastrowid
         cursor.close()
         conn.close()
-        return jsonify({"message": "Ride requested", "ride_id": ride_id}), 201
+        
+        print(f"✅ Ride {ride_id} created by user {user_id}")
+        return jsonify({
+            "message": "Ride requested successfully!",
+            "ride_id": ride_id
+        }), 201
+        
     except Exception as e:
-        print(f"Create ride error: {e}")
-        return jsonify({"error": "Create ride failed"}), 500
+        print(f"❌ Create ride error: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": "Failed to create ride", "details": str(e)}), 500
+
 
 @app.route("/driver/available_rides", methods=["GET"])
 def driver_available_rides():
+    """Get all available (requested) rides for drivers"""
     driver_id = session.get("driver_id")
     if not driver_id:
         return jsonify({"error": "Not logged in"}), 401
@@ -753,23 +843,209 @@ def driver_available_rides():
     try:
         conn = get_db_connection()
         cursor = conn.cursor(dictionary=True)
+        
+        # Get rides that are 'requested' and not yet assigned to any driver
         cursor.execute("""
-            SELECT r.ride_id, r.user_id, r.pickup_lat, r.pickup_lng, r.drop_lat, r.drop_lng, 
-                   r.pickup_address, r.dropoff_address, r.requested_at, r.fare,
-                   u.firstName as user_firstName, u.lastName as user_lastName, u.phone as user_phone
+            SELECT 
+                r.ride_id, 
+                r.user_id, 
+                r.pickup_lat, 
+                r.pickup_lng, 
+                r.drop_lat, 
+                r.drop_lng, 
+                r.pickup_address, 
+                r.dropoff_address, 
+                r.distance,
+                r.fare,
+                r.requested_at,
+                u.firstName as user_firstName, 
+                u.lastName as user_lastName, 
+                u.phone as user_phone
             FROM rides r
             JOIN users u ON r.user_id = u.id
-            WHERE r.status='requested'
-            ORDER BY r.requested_at ASC
-            LIMIT 10
+            WHERE r.status = 'requested' AND r.driver_id IS NULL
+            ORDER BY r.requested_at DESC
+            LIMIT 20
         """)
+        
         rides = cursor.fetchall()
         cursor.close()
         conn.close()
+        
+        print(f"✅ Found {len(rides)} available rides")
         return jsonify({"rides": rides}), 200
+        
     except Exception as e:
-        print(f"Get rides error: {e}")
+        print(f"❌ Get available rides error: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": "Failed to fetch rides", "details": str(e)}), 500
+
+
+# ---- RENAMED to avoid endpoint collision ----
+@app.route("/driver/accept_ride", methods=["POST"])
+def driver_accept_ride_post():
+    """Driver accepts a ride request"""
+    driver_id = session.get("driver_id")
+    if not driver_id:
+        return jsonify({"error": "Not logged in"}), 401
+
+    data = request.get_json() or {}
+    ride_id = data.get("ride_id")
+    
+    if not ride_id:
+        return jsonify({"error": "ride_id required"}), 400
+
+    conn = None
+    try:
+        conn = get_db_connection()
+        conn.start_transaction()
+        cursor = conn.cursor(dictionary=True)
+
+        # Check if ride is still available
+        cursor.execute("""
+            SELECT ride_id, status, driver_id 
+            FROM rides 
+            WHERE ride_id=%s AND status='requested' AND driver_id IS NULL
+            FOR UPDATE
+        """, (ride_id,))
+        
+        ride = cursor.fetchone()
+        
+        if not ride:
+            conn.rollback()
+            cursor.close()
+            conn.close()
+            return jsonify({"error": "Ride not available or already accepted"}), 409
+
+        # Assign ride to driver
+        cursor.execute("""
+            UPDATE rides
+            SET driver_id=%s, status='accepted', accepted_at=NOW()
+            WHERE ride_id=%s AND status='requested' AND driver_id IS NULL
+        """, (driver_id, ride_id))
+
+        if cursor.rowcount == 0:
+            conn.rollback()
+            cursor.close()
+            conn.close()
+            return jsonify({"error": "Failed to accept ride"}), 409
+
+        # Update driver status to busy
+        cursor.execute("""
+            UPDATE drivers 
+            SET status='busy' 
+            WHERE driver_id=%s
+        """, (driver_id,))
+
+        conn.commit()
+        cursor.close()
+        conn.close()
+        
+        print(f"✅ Driver {driver_id} accepted ride {ride_id}")
+        return jsonify({"message": "Ride accepted successfully", "ride_id": ride_id}), 200
+
+    except Exception as e:
+        if conn:
+            conn.rollback()
+        print(f"❌ Accept ride error: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": "Failed to accept ride", "details": str(e)}), 500
+
+
+@app.route("/user/my_rides", methods=["GET"])
+def user_my_rides():
+    """Get user's ride history"""
+    user_id = session.get("user_id")
+    if not user_id:
+        return jsonify({"error": "Not logged in"}), 401
+
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        
+        cursor.execute("""
+            SELECT 
+                r.ride_id,
+                r.pickup_address,
+                r.dropoff_address,
+                r.distance,
+                r.fare,
+                r.status,
+                r.requested_at,
+                r.accepted_at,
+                r.completed_at,
+                d.full_name as driver_name,
+                d.phone as driver_phone,
+                d.vehicle_type,
+                d.license_plate
+            FROM rides r
+            LEFT JOIN drivers d ON r.driver_id = d.driver_id
+            WHERE r.user_id = %s
+            ORDER BY r.requested_at DESC
+            LIMIT 50
+        """, (user_id,))
+        
+        rides = cursor.fetchall()
+        cursor.close()
+        conn.close()
+        
+        return jsonify({"rides": rides}), 200
+        
+    except Exception as e:
+        print(f"❌ Get user rides error: {e}")
         return jsonify({"error": "Failed to fetch rides"}), 500
+
+
+@app.route("/user/cancel_ride/<int:ride_id>", methods=["POST"])
+def cancel_ride(ride_id):
+    """User cancels a ride request"""
+    user_id = session.get("user_id")
+    if not user_id:
+        return jsonify({"error": "Not logged in"}), 401
+
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        # Check if ride belongs to user and is cancellable
+        cursor.execute("""
+            UPDATE rides
+            SET status='cancelled', completed_at=NOW()
+            WHERE ride_id=%s AND user_id=%s AND status IN ('requested', 'accepted')
+        """, (ride_id, user_id))
+        
+        if cursor.rowcount == 0:
+            conn.rollback()
+            cursor.close()
+            conn.close()
+            return jsonify({"error": "Cannot cancel this ride"}), 400
+        
+        conn.commit()
+        cursor.close()
+        conn.close()
+        
+        print(f"✅ User {user_id} cancelled ride {ride_id}")
+        return jsonify({"message": "Ride cancelled successfully"}), 200
+        
+    except Exception as e:
+        print(f"❌ Cancel ride error: {e}")
+        return jsonify({"error": "Failed to cancel ride"}), 500
+
+
+# Optional: quick route to print registered routes for debugging (remove in production)
+@app.route("/_debug/routes", methods=["GET"])
+def _debug_routes():
+    routes = []
+    for rule in app.url_map.iter_rules():
+        routes.append({
+            "endpoint": rule.endpoint,
+            "rule": str(rule),
+            "methods": sorted([m for m in rule.methods if m not in ("HEAD", "OPTIONS")])
+        })
+    return jsonify({"routes": routes})
+
 
 # Add this route to your app.py file
 

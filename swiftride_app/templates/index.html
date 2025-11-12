@@ -89,7 +89,7 @@
       <h3>Get ready for Your first Trip!</h3>
       {% endif %}
       
-      <div class="ride-section-container">
+      <!-- <div class="ride-section-container">
         <section class="ride-booking">
           {% if not session.get('user_id') %}
           <h2>Book Your Ride</h2>
@@ -100,17 +100,16 @@
           {% endif %}
 
           <div class="ride-form">
-            <!-- Pickup -->
+          
             <div class="location-input">
               <span class="icon pickup-icon"></span>
               <input type="text" id="pickup" placeholder="Pickup location">
               <i class="fas fa-location-arrow map-icon"></i>
             </div>
 
-            <!-- Connector line -->
             <div class="connector"></div>
 
-            <!-- Dropoff -->
+           
             <div class="location-input">
               <span class="icon dropoff-icon"></span>
               <input type="text" id="dropoff" placeholder="Dropoff location">
@@ -121,7 +120,44 @@
           <p id="price-output"></p>
         </section>
         <div id="map-container" style="width:100%; height:400px;"></div>
+      </div> -->
+      <!-- HOME PAGE RIDE SECTION -->
+<div class="ride-section-container">
+  <section class="ride-booking">
+    {% if not session.get('user_id') %}
+    <h2>Book Your Ride</h2>
+    <p>Enter your pickup and drop-off locations to get an instant fare estimate.</p>
+    {% endif %}
+    {% if session.get('user_id') %}
+    <p>Discover the convenience of SwiftRide. Request a ride now, or schedule one for later directly from your browser.</p>
+    {% endif %}
+
+    <div class="ride-form">
+      <!-- Pickup with GPS icon -->
+      <div class="location-input">
+        <span class="icon pickup-icon"></span>
+        <input type="text" id="pickup" placeholder="Pickup location">
+        <i class="fas fa-location-arrow map-icon" 
+           style="cursor: pointer; color: #10b981; font-size: 1.2rem;" 
+           title="Use my current location"
+           onclick="useCurrentLocationAsPickup('pickup', 'map-container')"></i>
       </div>
+
+      <!-- Connector line -->
+      <div class="connector"></div>
+
+      <!-- Dropoff -->
+      <div class="location-input">
+        <span class="icon dropoff-icon"></span>
+        <input type="text" id="dropoff" placeholder="Dropoff location">
+      </div>
+
+      <button onclick="showPrice()">See prices</button>
+    </div>
+    <p id="price-output"></p>
+  </section>
+  <div id="map-container" style="width:100%; height:400px;"></div>
+</div>
 
       <section class="steps-section">
         <h2>Book your trip on your computer</h2>
@@ -192,20 +228,20 @@
   </div>
 
   <!-- Ride Page -->
-  <div id="ride-page" class="page-container">
+  <!-- <div id="ride-page" class="page-container">
     <div class="ride-container">
       <div class="ride-form">
-        <!-- Pickup -->
+      
         <div class="location-input">
           <span class="icon pickup-icon"></span>
           <input type="text" id="ride-pickup" placeholder="Pickup location">
           <i class="fas fa-location-arrow map-icon"></i>
         </div>
 
-        <!-- Line -->
+     
         <div class="ride-line"></div>
 
-        <!-- Dropoff -->
+      
         <div class="location-input">
           <span class="icon dropoff-icon"></span>
           <input type="text" id="ride-dropoff" placeholder="Dropoff location">
@@ -216,7 +252,36 @@
       </div>
     </div>
     <div id="ride-map-container" style="width:100%; height:400px;"></div>
+  </div> -->
+  <!-- RIDE PAGE SECTION -->
+<div id="ride-page" class="page-container">
+  <div class="ride-container">
+    <div class="ride-form">
+      <!-- Pickup with GPS icon -->
+      <div class="location-input">
+        <span class="icon pickup-icon"></span>
+        <input type="text" id="ride-pickup" placeholder="Pickup location">
+        <i class="fas fa-location-arrow map-icon" 
+           style="cursor: pointer; color: #10b981; font-size: 1.2rem;" 
+           title="Use my current location"
+           onclick="useCurrentLocationAsPickup('ride-pickup', 'ride-map-container')"></i>
+      </div>
+
+      <!-- Line -->
+      <div class="ride-line"></div>
+
+      <!-- Dropoff -->
+      <div class="location-input">
+        <span class="icon dropoff-icon"></span>
+        <input type="text" id="ride-dropoff" placeholder="Dropoff location">
+      </div>
+
+      <button onclick="showPrice()">Check Price</button>
+      <p id="ride-price-output"></p>
+    </div>
   </div>
+  <div id="ride-map-container" style="width:100%; height:400px;"></div>
+</div>
 
   <!-- Login Page -->
   <div id="login-page" class="page-container">

@@ -871,412 +871,778 @@ function showRidePage() {
   }, 100);
 }
 
-  let rideMap, pickupMarker, dropMarker, routeControl;
-    let pickupTimeout = null;
-    let dropoffTimeout = null;
+ // Add this to your index.js file or replace the existing map initialization
 
-    // Initialize map when ride page loads
-    function initRideMap(containerId = "map-container") {
-      // Always create a new map instance to avoid conflicts
+let rideMap, pickupMarker, dropMarker, routeControl;
+let pickupTimeout = null;
+let dropoffTimeout = null;
+let userCurrentLocation = null;
+
+
+function initRideMap(containerId = "map-container") {
+  if (rideMap) {
+    try {
+      rideMap.remove();
+    } catch (e) {
+      console.log("Error removing map:", e);
+    }
+    rideMap = null;
+  }
+  
+  const container = document.getElementById(containerId);
+  if (container) {
+
+    rideMap = L.map(containerId).setView([18.5204, 73.8567], 12);
+
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      maxZoom: 19,
+      attribution: "&copy; OpenStreetMap contributors",
+    }).addTo(rideMap);
+    
+    setTimeout(() => {
       if (rideMap) {
         try {
-          rideMap.remove();
+          rideMap.invalidateSize();
         } catch (e) {
-          console.log("Error removing map:", e);
+          console.log("Error invalidating map size:", e);
         }
-        rideMap = null;
       }
-      
-      // Create new map for the specified container
-      const container = document.getElementById(containerId);
-      if (container) {
-        rideMap = L.map(containerId).setView([18.5204, 73.8567], 12);
+    }, 100);
+  }
+}
 
-        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-          maxZoom: 19,
-          attribution: "&copy; OpenStreetMap contributors",
-        }).addTo(rideMap);
-        
-        // Ensure map resizes properly
-        setTimeout(() => {
-          if (rideMap) {
-            try {
-              rideMap.invalidateSize();
-            } catch (e) {
-              console.log("Error invalidating map size:", e);
-            }
-          }
-        }, 100);
-      }
-    }
 
-    // Convert place name → coordinates using OpenStreetMap Nominatim
-    async function getCoordinates(location) {
-      try {
-        const response = await fetch(
-          `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
-            location
-          )}&limit=1`,
-          {
-            headers: {
-              "User-Agent": "RideShareApp/1.0",
-            },
-          }
-        );
-        const data = await response.json();
-        if (data.length > 0) {
-          return [parseFloat(data[0].lat), parseFloat(data[0].lon)];
-        }
-        return null;
-      } catch (err) {
-        console.error("Error fetching coordinates:", err);
-        return null;
-      }
-    }
-
-    // 🧠 Live pickup marker update
-    async function updatePickupLocation(query, containerId = "map-container") {
-      if (!query || query.trim() === "") {
-        // Initialize map to clear any existing markers
-        initRideMap(containerId);
-        
-        if (pickupMarker && rideMap) {
-          rideMap.removeLayer(pickupMarker);
-          pickupMarker = null;
-          if (routeControl) {
-            rideMap.removeControl(routeControl);
-            routeControl = null;
-          }
-        }
-        return;
-      }
-
-      const coords = await getCoordinates(query);
-      if (!coords) {
-        console.log("Could not find location for:", query);
-        return;
-      }
-
-      initRideMap(containerId);
-
-      // Remove existing pickup marker if it exists
-      if (pickupMarker && rideMap) {
-        try {
-          rideMap.removeLayer(pickupMarker);
-        } catch (e) {
-          console.log("Error removing pickup marker:", e);
-        }
-        pickupMarker = null;
-      }
-
-      const pickupIcon = L.divIcon({
-        className: "custom-marker",
-        html: '<div style="background: #10b981; width: 30px; height: 30px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 8px rgba(0,0,0,0.3);"></div>',
-        iconSize: [30, 30],
-        iconAnchor: [15, 15],
-      });
-
-      if (rideMap) {
-        pickupMarker = L.marker(coords, { icon: pickupIcon })
-          .addTo(rideMap)
-          .bindPopup(`<b>📍 Pickup</b><br>${query}`)
-          .openPopup();
-
-        rideMap.setView(coords, 14);
-        updateRoute();
-      }
-    }
-
-    // 🧠 Live dropoff marker update
-    async function updateDropoffLocation(query, containerId = "map-container") {
-      if (!query || query.trim() === "") {
-        // Initialize map to clear any existing markers
-        initRideMap(containerId);
-        
-        if (dropMarker && rideMap) {
-          rideMap.removeLayer(dropMarker);
-          dropMarker = null;
-        }
-        if (routeControl && rideMap) {
-          rideMap.removeControl(routeControl);
-          routeControl = null;
-        }
-        const priceOutputId = containerId === "ride-map-container" ? "ride-price-output" : "price-output";
-        const priceOutput = document.getElementById(priceOutputId);
-        if (priceOutput) priceOutput.textContent = "";
-        return;
-      }
-
-      const coords = await getCoordinates(query);
-      if (!coords) {
-        console.log("Could not find location for:", query);
-        return;
-      }
-
-      initRideMap(containerId);
-
-      // Remove existing drop marker if it exists
-      if (dropMarker && rideMap) {
-        try {
-          rideMap.removeLayer(dropMarker);
-        } catch (e) {
-          console.log("Error removing drop marker:", e);
-        }
-        dropMarker = null;
-      }
-
-      const dropIcon = L.divIcon({
-        className: "custom-marker",
-        html: '<div style="background: #ef4444; width: 30px; height: 30px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 8px rgba(0,0,0,0.3);"></div>',
-        iconSize: [30, 30],
-        iconAnchor: [15, 15],
-      });
-
-      if (rideMap) {
-        dropMarker = L.marker(coords, { icon: dropIcon })
-          .addTo(rideMap)
-          .bindPopup(`<b>🎯 Dropoff</b><br>${query}`)
-          .openPopup();
-
-        updateRoute();
-      }
-    }
-
-    // 🛣️ Update route with ACTUAL ROAD PATH (not straight line!)
-    async function updateRoute() {
-      if (!pickupMarker || !dropMarker || !rideMap) return;
-
-      const pickupCoords = pickupMarker.getLatLng();
-      const dropCoords = dropMarker.getLatLng();
-
-      // Remove old route control if exists
-      if (routeControl) {
-        try {
-          rideMap.removeControl(routeControl);
-        } catch (e) {
-          console.log("Error removing route control:", e);
-        }
-        routeControl = null;
-      }
-
-      // Create route using Leaflet Routing Machine with OSRM
-      routeControl = L.Routing.control({
-        waypoints: [
-          L.latLng(pickupCoords.lat, pickupCoords.lng),
-          L.latLng(dropCoords.lat, dropCoords.lng)
-        ],
-        routeWhileDragging: false,
-        show: false,
-        addWaypoints: false,
-        router: L.Routing.osrmv1({
-          serviceUrl: 'https://router.project-osrm.org/route/v1'
-        }),
-        lineOptions: {
-          styles: [
-            { 
-              color: '#3b82f6', 
-              opacity: 0.8, 
-              weight: 6 
-            }
-          ]
+function getUserCurrentLocation() {
+  return new Promise((resolve, reject) => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          userCurrentLocation = {
+            lat: position.coords.latitude,
+            lng: position.coords.longitude
+          };
+          console.log("✅ User location obtained:", userCurrentLocation);
+          resolve(userCurrentLocation);
         },
-        createMarker: function() { 
-          return null; 
+        (error) => {
+          console.error("❌ Location error:", error);
+          reject(error);
         }
-      }).addTo(rideMap);
-
-      // When route is calculated, display distance and price
-      routeControl.on('routesfound', function(e) {
-        const routes = e.routes;
-        const route = routes[0];
-
-        // Get actual road distance in kilometers
-        const distanceKm = (route.summary.totalDistance / 1000).toFixed(2);
-        const durationMin = Math.round(route.summary.totalTime / 60);
-        const price = (distanceKm * 15).toFixed(2);
-
-        // Determine which price output to use based on current map
-        const containerId = rideMap._container.id;
-        const priceOutputId = containerId === "ride-map-container" ? "ride-price-output" : "price-output";
-        const priceOutput = document.getElementById(priceOutputId);
-        
-        if (priceOutput) {
-          priceOutput.innerHTML = `
-            <strong>Distance (by road):</strong> ${distanceKm} km<br>
-            <strong>Estimated Time:</strong> ${durationMin} minutes<br>
-            <strong>Estimated Price:</strong> ₹${price}
-            <div style="margin-top: 8px; padding: 6px; background: #10b98120; border-left: 3px solid #10b981; font-size: 12px;">
-              ✅ <em>Route follows actual roads</em>
-            </div>
-          `;
-        }
-
-        console.log("✅ Road route calculated!");
-        console.log("📏 Distance:", distanceKm, "km");
-        console.log("⏱️ Duration:", durationMin, "minutes");
-      });
-
-      // Handle errors
-      routeControl.on('routingerror', function(e) {
-        console.error('❌ Routing error:', e.error);
-
-        // Determine which price output to use based on current map
-        const containerId = rideMap._container.id;
-        const priceOutputId = containerId === "ride-map-container" ? "ride-price-output" : "price-output";
-        const priceOutput = document.getElementById(priceOutputId);
-        
-        if (priceOutput) {
-          priceOutput.innerHTML = `
-            <div style="color: #ef4444;">
-              ⚠️ Unable to calculate road route. Please try again or check your internet connection.
-            </div>
-          `;
-        }
-      });
+      );
+    } else {
+      reject(new Error("Geolocation not supported"));
     }
+  });
+}
 
-    // Function to show price & route (triggered by button)
-    async function showPrice() {
-      // Determine which form we're working with based on which button was clicked
-      const clickedButton = event && event.target ? event.target : null;
-      const isRidePage = clickedButton ? clickedButton.closest('#ride-page') !== null : false;
-      
-      // Get the appropriate input elements
-      const pickupInputId = isRidePage ? "ride-pickup" : "pickup";
-      const dropoffInputId = isRidePage ? "ride-dropoff" : "dropoff";
-      const containerId = isRidePage ? "ride-map-container" : "map-container";
-      
-      const pickup = document.getElementById(pickupInputId).value.trim();
-      const drop = document.getElementById(dropoffInputId).value.trim();
 
-      if (!pickup || !drop) {
-        alert("⚠️ Please enter both pickup and dropoff locations.");
-        return;
+async function getAddressFromCoords(lat, lng) {
+  try {
+    const response = await fetch(
+      `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`,
+      {
+        headers: {
+          "User-Agent": "RideShareApp/1.0",
+        },
       }
+    );
+    const data = await response.json();
+    return data.display_name || `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+  } catch (err) {
+    console.error("Error getting address:", err);
+    return `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+  }
+}
 
-      initRideMap(containerId);
 
-      const pickupCoords = await getCoordinates(pickup);
-      const dropCoords = await getCoordinates(drop);
-
-      if (!pickupCoords || !dropCoords) {
-        alert("❌ Unable to locate one or both locations. Please try again.");
-        return;
+async function getCoordinates(location) {
+  try {
+    const response = await fetch(
+      `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
+        location
+      )}&limit=1`,
+      {
+        headers: {
+          "User-Agent": "RideShareApp/1.0",
+        },
       }
+    );
+    const data = await response.json();
+    if (data.length > 0) {
+      return [parseFloat(data[0].lat), parseFloat(data[0].lon)];
+    }
+    return null;
+  } catch (err) {
+    console.error("Error fetching coordinates:", err);
+    return null;
+  }
+}
 
-      // Clear existing markers
-      if (pickupMarker && rideMap) {
-        try {
-          rideMap.removeLayer(pickupMarker);
-        } catch (e) {
-          console.log("Error removing pickup marker:", e);
-        }
-        pickupMarker = null;
-      }
-      
-      if (dropMarker && rideMap) {
-        try {
-          rideMap.removeLayer(dropMarker);
-        } catch (e) {
-          console.log("Error removing drop marker:", e);
-        }
-        dropMarker = null;
-      }
-      
-      if (routeControl && rideMap) {
-        try {
-          rideMap.removeControl(routeControl);
-        } catch (e) {
-          console.log("Error removing route control:", e);
-        }
+
+async function useCurrentLocationAsPickup(inputId, containerId = "map-container") {
+  const pickupInput = document.getElementById(inputId);
+  if (!pickupInput) return;
+
+  // Show loading state
+  pickupInput.value = "Getting your location...";
+  pickupInput.disabled = true;
+
+  try {
+    const location = await getUserCurrentLocation();
+    const address = await getAddressFromCoords(location.lat, location.lng);
+    
+    pickupInput.value = address;
+    pickupInput.disabled = false;
+
+    
+    initRideMap(containerId);
+    await updatePickupLocation(address, containerId, location);
+
+  } catch (error) {
+    console.error("Error getting location:", error);
+    pickupInput.value = "";
+    pickupInput.disabled = false;
+    alert("❌ Could not get your location. Please enable location services.");
+  }
+}
+
+
+async function updatePickupLocation(query, containerId = "map-container", predefinedCoords = null) {
+  if (!query || query.trim() === "") {
+    initRideMap(containerId);
+    
+    if (pickupMarker && rideMap) {
+      rideMap.removeLayer(pickupMarker);
+      pickupMarker = null;
+      if (routeControl) {
+        rideMap.removeControl(routeControl);
         routeControl = null;
       }
+    }
+    return;
+  }
 
-      const pickupIcon = L.divIcon({
-        className: "custom-marker",
-        html: '<div style="background: #10b981; width: 30px; height: 30px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 8px rgba(0,0,0,0.3);"></div>',
-        iconSize: [30, 30],
-        iconAnchor: [15, 15],
-      });
+ 
+  const coords = predefinedCoords ? [predefinedCoords.lat, predefinedCoords.lng] : await getCoordinates(query);
+  
+  if (!coords) {
+    console.log("Could not find location for:", query);
+    return;
+  }
 
-      const dropIcon = L.divIcon({
-        className: "custom-marker",
-        html: '<div style="background: #ef4444; width: 30px; height: 30px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 8px rgba(0,0,0,0.3);"></div>',
-        iconSize: [30, 30],
-        iconAnchor: [15, 15],
-      });
+  initRideMap(containerId);
 
-      if (rideMap) {
-        pickupMarker = L.marker(pickupCoords, { icon: pickupIcon })
-          .addTo(rideMap)
-          .bindPopup(`<b>📍 Pickup</b><br>${pickup}`);
+  if (pickupMarker && rideMap) {
+    try {
+      rideMap.removeLayer(pickupMarker);
+    } catch (e) {
+      console.log("Error removing pickup marker:", e);
+    }
+    pickupMarker = null;
+  }
 
-        dropMarker = L.marker(dropCoords, { icon: dropIcon })
-          .addTo(rideMap)
-          .bindPopup(`<b>🎯 Dropoff</b><br>${drop}`);
+  const pickupIcon = L.divIcon({
+    className: "custom-marker",
+    html: '<div style="background: #10b981; width: 30px; height: 30px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 8px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center;"><i class="fas fa-map-marker-alt" style="color: white; font-size: 14px;"></i></div>',
+    iconSize: [30, 30],
+    iconAnchor: [15, 15],
+  });
 
-        updateRoute();
+  if (rideMap) {
+    pickupMarker = L.marker(coords, { icon: pickupIcon })
+      .addTo(rideMap)
+      .bindPopup(`<b>📍 Pickup</b><br>${query}`)
+      .openPopup();
+
+    rideMap.setView(coords, 14);
+    updateRoute();
+  }
+}
+
+
+async function updateDropoffLocation(query, containerId = "map-container") {
+  if (!query || query.trim() === "") {
+    initRideMap(containerId);
+    
+    if (dropMarker && rideMap) {
+      rideMap.removeLayer(dropMarker);
+      dropMarker = null;
+    }
+    if (routeControl && rideMap) {
+      rideMap.removeControl(routeControl);
+      routeControl = null;
+    }
+    const priceOutputId = containerId === "ride-map-container" ? "ride-price-output" : "price-output";
+    const priceOutput = document.getElementById(priceOutputId);
+    if (priceOutput) priceOutput.textContent = "";
+    return;
+  }
+
+  const coords = await getCoordinates(query);
+  if (!coords) {
+    console.log("Could not find location for:", query);
+    return;
+  }
+
+  initRideMap(containerId);
+
+  if (dropMarker && rideMap) {
+    try {
+      rideMap.removeLayer(dropMarker);
+    } catch (e) {
+      console.log("Error removing drop marker:", e);
+    }
+    dropMarker = null;
+  }
+
+  const dropIcon = L.divIcon({
+    className: "custom-marker",
+    html: '<div style="background: #ef4444; width: 30px; height: 30px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 8px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center;"><i class="fas fa-flag" style="color: white; font-size: 14px;"></i></div>',
+    iconSize: [30, 30],
+    iconAnchor: [15, 15],
+  });
+
+  if (rideMap) {
+    dropMarker = L.marker(coords, { icon: dropIcon })
+      .addTo(rideMap)
+      .bindPopup(`<b>🎯 Dropoff</b><br>${query}`)
+      .openPopup();
+
+    updateRoute();
+  }
+}
+
+
+async function updateRoute() {
+  if (!pickupMarker || !dropMarker || !rideMap) return;
+
+  const pickupCoords = pickupMarker.getLatLng();
+  const dropCoords = dropMarker.getLatLng();
+
+  if (routeControl) {
+    try {
+      rideMap.removeControl(routeControl);
+    } catch (e) {
+      console.log("Error removing route control:", e);
+    }
+    routeControl = null;
+  }
+
+  routeControl = L.Routing.control({
+    waypoints: [
+      L.latLng(pickupCoords.lat, pickupCoords.lng),
+      L.latLng(dropCoords.lat, dropCoords.lng)
+    ],
+    routeWhileDragging: false,
+    show: false,
+    addWaypoints: false,
+    router: L.Routing.osrmv1({
+      serviceUrl: 'https://router.project-osrm.org/route/v1'
+    }),
+    lineOptions: {
+      styles: [
+        { 
+          color: '#3b82f6', 
+          opacity: 0.8, 
+          weight: 6 
+        }
+      ]
+    },
+    createMarker: function() { 
+      return null; 
+    }
+  }).addTo(rideMap);
+
+  routeControl.on('routesfound', function(e) {
+    const routes = e.routes;
+    const route = routes[0];
+
+    const distanceKm = (route.summary.totalDistance / 1000).toFixed(2);
+    const durationMin = Math.round(route.summary.totalTime / 60);
+    const price = (distanceKm * 15).toFixed(2);
+
+    const containerId = rideMap._container.id;
+    const priceOutputId = containerId === "ride-map-container" ? "ride-price-output" : "price-output";
+    const priceOutput = document.getElementById(priceOutputId);
+    
+    if (priceOutput) {
+      priceOutput.innerHTML = `
+        <strong>Distance (by road):</strong> ${distanceKm} km<br>
+        <strong>Estimated Time:</strong> ${durationMin} minutes<br>
+        <strong>Estimated Price:</strong> ₹${price}
+        <div style="margin-top: 8px; padding: 6px; background: #10b98120; border-left: 3px solid #10b981; font-size: 12px;">
+          ✅ <em>Route follows actual roads</em>
+        </div>
+      `;
+    }
+  });
+
+  routeControl.on('routingerror', function(e) {
+    console.error('❌ Routing error:', e.error);
+
+    const containerId = rideMap._container.id;
+    const priceOutputId = containerId === "ride-map-container" ? "ride-price-output" : "price-output";
+    const priceOutput = document.getElementById(priceOutputId);
+    
+    if (priceOutput) {
+      priceOutput.innerHTML = `
+        <div style="color: #ef4444;">
+          ⚠️ Unable to calculate road route. Please try again.
+        </div>
+      `;
+    }
+  });
+}
+
+
+async function showPrice() {
+  const clickedButton = event && event.target ? event.target : null;
+  const isRidePage = clickedButton ? clickedButton.closest('#ride-page') !== null : false;
+  
+  const pickupInputId = isRidePage ? "ride-pickup" : "pickup";
+  const dropoffInputId = isRidePage ? "ride-dropoff" : "dropoff";
+  const containerId = isRidePage ? "ride-map-container" : "map-container";
+  
+  const pickup = document.getElementById(pickupInputId).value.trim();
+  const drop = document.getElementById(dropoffInputId).value.trim();
+
+  if (!pickup || !drop) {
+    alert("⚠️ Please enter both pickup and dropoff locations.");
+    return;
+  }
+
+  initRideMap(containerId);
+
+  const pickupCoords = await getCoordinates(pickup);
+  const dropCoords = await getCoordinates(drop);
+
+  if (!pickupCoords || !dropCoords) {
+    alert("❌ Unable to locate one or both locations. Please try again.");
+    return;
+  }
+
+  if (pickupMarker && rideMap) {
+    try {
+      rideMap.removeLayer(pickupMarker);
+    } catch (e) {
+      console.log("Error removing pickup marker:", e);
+    }
+    pickupMarker = null;
+  }
+  
+  if (dropMarker && rideMap) {
+    try {
+      rideMap.removeLayer(dropMarker);
+    } catch (e) {
+      console.log("Error removing drop marker:", e);
+    }
+    dropMarker = null;
+  }
+  
+  if (routeControl && rideMap) {
+    try {
+      rideMap.removeControl(routeControl);
+    } catch (e) {
+      console.log("Error removing route control:", e);
+    }
+    routeControl = null;
+  }
+
+  const pickupIcon = L.divIcon({
+    className: "custom-marker",
+    html: '<div style="background: #10b981; width: 30px; height: 30px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 8px rgba(0,0,0,0.3);"></div>',
+    iconSize: [30, 30],
+    iconAnchor: [15, 15],
+  });
+
+  const dropIcon = L.divIcon({
+    className: "custom-marker",
+    html: '<div style="background: #ef4444; width: 30px; height: 30px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 8px rgba(0,0,0,0.3);"></div>',
+    iconSize: [30, 30],
+    iconAnchor: [15, 15],
+  });
+
+  if (rideMap) {
+    pickupMarker = L.marker(pickupCoords, { icon: pickupIcon })
+      .addTo(rideMap)
+      .bindPopup(`<b>📍 Pickup</b><br>${pickup}`);
+
+    dropMarker = L.marker(dropCoords, { icon: dropIcon })
+      .addTo(rideMap)
+      .bindPopup(`<b>🎯 Dropoff</b><br>${drop}`);
+
+    updateRoute();
+  }
+}
+
+
+function initLiveLocationUpdate() {
+ 
+  const pickupInput = document.getElementById("pickup");
+  const dropoffInput = document.getElementById("dropoff");
+  
+
+  const ridePickupInput = document.getElementById("ride-pickup");
+  const rideDropoffInput = document.getElementById("ride-dropoff");
+
+ 
+  const locationIcons = document.querySelectorAll('.map-icon');
+  locationIcons.forEach(icon => {
+    icon.addEventListener('click', function() {
+      const isRidePage = this.closest('#ride-page') !== null;
+      const inputId = isRidePage ? 'ride-pickup' : 'pickup';
+      const containerId = isRidePage ? 'ride-map-container' : 'map-container';
+      useCurrentLocationAsPickup(inputId, containerId);
+    });
+  });
+
+  if (pickupInput) {
+    pickupInput.addEventListener("input", () => {
+      clearTimeout(pickupTimeout);
+      pickupTimeout = setTimeout(() => {
+        const query = pickupInput.value.trim();
+        updatePickupLocation(query, "map-container");
+      }, 1000);
+    });
+  }
+
+  if (dropoffInput) {
+    dropoffInput.addEventListener("input", () => {
+      clearTimeout(dropoffTimeout);
+      dropoffTimeout = setTimeout(() => {
+        const query = dropoffInput.value.trim();
+        updateDropoffLocation(query, "map-container");
+      }, 1000);
+    });
+  }
+  
+  if (ridePickupInput) {
+    ridePickupInput.addEventListener("input", () => {
+      clearTimeout(pickupTimeout);
+      pickupTimeout = setTimeout(() => {
+        const query = ridePickupInput.value.trim();
+        updatePickupLocation(query, "ride-map-container");
+      }, 1000);
+    });
+  }
+
+  if (rideDropoffInput) {
+    rideDropoffInput.addEventListener("input", () => {
+      clearTimeout(dropoffTimeout);
+      dropoffTimeout = setTimeout(() => {
+        const query = rideDropoffInput.value.trim();
+        updateDropoffLocation(query, "ride-map-container");
+      }, 1000);
+    });
+  }
+}
+
+
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", initLiveLocationUpdate);
+} else {
+  initLiveLocationUpdate();
+}
+
+
+window.useCurrentLocationAsPickup = useCurrentLocationAsPickup;
+window.showPrice = showPrice;
+
+
+// Add this to your index.js - Enhanced ride booking with request functionality
+
+let currentRideData = null; // Store ride data after price calculation
+
+// Enhanced showPrice function with Request Ride functionality
+async function showPrice() {
+  const clickedButton = event && event.target ? event.target : null;
+  const isRidePage = clickedButton ? clickedButton.closest('#ride-page') !== null : false;
+  
+  const pickupInputId = isRidePage ? "ride-pickup" : "pickup";
+  const dropoffInputId = isRidePage ? "ride-dropoff" : "dropoff";
+  const containerId = isRidePage ? "ride-map-container" : "map-container";
+  const priceOutputId = isRidePage ? "ride-price-output" : "price-output";
+  
+  const pickup = document.getElementById(pickupInputId).value.trim();
+  const drop = document.getElementById(dropoffInputId).value.trim();
+
+  if (!pickup || !drop) {
+    alert("⚠️ Please enter both pickup and dropoff locations.");
+    return;
+  }
+
+  initRideMap(containerId);
+
+  const pickupCoords = await getCoordinates(pickup);
+  const dropCoords = await getCoordinates(drop);
+
+  if (!pickupCoords || !dropCoords) {
+    alert("❌ Unable to locate one or both locations. Please try again.");
+    return;
+  }
+
+  // Clear existing markers
+  if (pickupMarker && rideMap) {
+    try {
+      rideMap.removeLayer(pickupMarker);
+    } catch (e) {
+      console.log("Error removing pickup marker:", e);
+    }
+    pickupMarker = null;
+  }
+  
+  if (dropMarker && rideMap) {
+    try {
+      rideMap.removeLayer(dropMarker);
+    } catch (e) {
+      console.log("Error removing drop marker:", e);
+    }
+    dropMarker = null;
+  }
+  
+  if (routeControl && rideMap) {
+    try {
+      rideMap.removeControl(routeControl);
+    } catch (e) {
+      console.log("Error removing route control:", e);
+    }
+    routeControl = null;
+  }
+
+  const pickupIcon = L.divIcon({
+    className: "custom-marker",
+    html: '<div style="background: #10b981; width: 30px; height: 30px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 8px rgba(0,0,0,0.3);"></div>',
+    iconSize: [30, 30],
+    iconAnchor: [15, 15],
+  });
+
+  const dropIcon = L.divIcon({
+    className: "custom-marker",
+    html: '<div style="background: #ef4444; width: 30px; height: 30px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 8px rgba(0,0,0,0.3);"></div>',
+    iconSize: [30, 30],
+    iconAnchor: [15, 15],
+  });
+
+  if (rideMap) {
+    pickupMarker = L.marker(pickupCoords, { icon: pickupIcon })
+      .addTo(rideMap)
+      .bindPopup(`<b>📍 Pickup</b><br>${pickup}`);
+
+    dropMarker = L.marker(dropCoords, { icon: dropIcon })
+      .addTo(rideMap)
+      .bindPopup(`<b>🎯 Dropoff</b><br>${drop}`);
+
+    // Create route and calculate price
+    createRouteWithRequestButton(pickupCoords, dropCoords, pickup, drop, priceOutputId);
+  }
+}
+
+// Create route and add Request Ride button
+function createRouteWithRequestButton(pickupCoords, dropCoords, pickupAddress, dropAddress, priceOutputId) {
+  if (!rideMap) return;
+
+  if (routeControl) {
+    try {
+      rideMap.removeControl(routeControl);
+    } catch (e) {
+      console.log("Error removing route control:", e);
+    }
+    routeControl = null;
+  }
+
+  routeControl = L.Routing.control({
+    waypoints: [
+      L.latLng(pickupCoords[0], pickupCoords[1]),
+      L.latLng(dropCoords[0], dropCoords[1])
+    ],
+    routeWhileDragging: false,
+    show: false,
+    addWaypoints: false,
+    router: L.Routing.osrmv1({
+      serviceUrl: 'https://router.project-osrm.org/route/v1'
+    }),
+    lineOptions: {
+      styles: [
+        { 
+          color: '#3b82f6', 
+          opacity: 0.8, 
+          weight: 6 
+        }
+      ]
+    },
+    createMarker: function() { 
+      return null; 
+    }
+  }).addTo(rideMap);
+
+  routeControl.on('routesfound', function(e) {
+    const routes = e.routes;
+    const route = routes[0];
+
+    const distanceKm = (route.summary.totalDistance / 1000).toFixed(2);
+    const durationMin = Math.round(route.summary.totalTime / 60);
+    const price = (distanceKm * 15).toFixed(2);
+
+    // Store ride data globally
+    currentRideData = {
+      pickup_lat: pickupCoords[0],
+      pickup_lng: pickupCoords[1],
+      drop_lat: dropCoords[0],
+      drop_lng: dropCoords[1],
+      pickup_address: pickupAddress,
+      dropoff_address: dropAddress,
+      distance: distanceKm,
+      fare: price,
+      duration: durationMin
+    };
+
+    const priceOutput = document.getElementById(priceOutputId);
+    
+    if (priceOutput) {
+      priceOutput.innerHTML = `
+        <div style="background: rgba(255,255,255,0.1); backdrop-filter: blur(10px); padding: 20px; border-radius: 12px; margin-top: 15px;">
+          <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+            <strong>📏 Distance:</strong> 
+            <span>${distanceKm} km</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+            <strong>⏱️ Duration:</strong> 
+            <span>${durationMin} minutes</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; margin-bottom: 15px; font-size: 1.2rem; color: #5fe32e;">
+            <strong>💰 Fare:</strong> 
+            <span>₹${price}</span>
+          </div>
+          <button 
+            id="request-ride-btn" 
+            onclick="requestRide()"
+            style="width: 100%; padding: 12px; background: linear-gradient(135deg, #5fe32e, #0ea572); color: white; border: none; border-radius: 8px; font-weight: bold; font-size: 1rem; cursor: pointer; transition: all 0.3s;">
+            🚗 Request Ride
+          </button>
+          <div style="margin-top: 10px; padding: 8px; background: #10b98120; border-left: 3px solid #10b981; font-size: 12px; border-radius: 4px;">
+            ✅ <em>Route follows actual roads</em>
+          </div>
+        </div>
+      `;
+
+      // Add hover effect
+      const requestBtn = document.getElementById('request-ride-btn');
+      if (requestBtn) {
+        requestBtn.addEventListener('mouseenter', function() {
+          this.style.transform = 'translateY(-2px)';
+          this.style.boxShadow = '0 6px 12px rgba(95, 227, 46, 0.3)';
+        });
+        requestBtn.addEventListener('mouseleave', function() {
+          this.style.transform = 'translateY(0)';
+          this.style.boxShadow = 'none';
+        });
       }
     }
+  });
 
-    // 🧩 Initialize live location updates
-    function initLiveLocationUpdate() {
-      // Home page inputs
-      const pickupInput = document.getElementById("pickup");
-      const dropoffInput = document.getElementById("dropoff");
-      
-      // Ride page inputs
-      const ridePickupInput = document.getElementById("ride-pickup");
-      const rideDropoffInput = document.getElementById("ride-dropoff");
+  routeControl.on('routingerror', function(e) {
+    console.error('❌ Routing error:', e.error);
 
-      if (pickupInput) {
-        pickupInput.addEventListener("input", () => {
-          clearTimeout(pickupTimeout);
-          pickupTimeout = setTimeout(() => {
-            const query = pickupInput.value.trim();
-            updatePickupLocation(query, "map-container");
-          }, 1000);
-        });
-      }
-
-      if (dropoffInput) {
-        dropoffInput.addEventListener("input", () => {
-          clearTimeout(dropoffTimeout);
-          dropoffTimeout = setTimeout(() => {
-            const query = dropoffInput.value.trim();
-            updateDropoffLocation(query, "map-container");
-          }, 1000);
-        });
-      }
-      
-      if (ridePickupInput) {
-        ridePickupInput.addEventListener("input", () => {
-          clearTimeout(pickupTimeout);
-          pickupTimeout = setTimeout(() => {
-            const query = ridePickupInput.value.trim();
-            updatePickupLocation(query, "ride-map-container");
-          }, 1000);
-        });
-      }
-
-      if (rideDropoffInput) {
-        rideDropoffInput.addEventListener("input", () => {
-          clearTimeout(dropoffTimeout);
-          dropoffTimeout = setTimeout(() => {
-            const query = rideDropoffInput.value.trim();
-            updateDropoffLocation(query, "ride-map-container");
-          }, 1000);
-        });
-      }
+    const priceOutput = document.getElementById(priceOutputId);
+    
+    if (priceOutput) {
+      priceOutput.innerHTML = `
+        <div style="color: #ef4444; padding: 15px; background: rgba(239, 68, 68, 0.1); border-radius: 8px; margin-top: 15px;">
+          ⚠️ Unable to calculate route. Please try again or check your internet connection.
+        </div>
+      `;
     }
+  });
+}
 
-    // Initialize when DOM is ready
-    if (document.readyState === "loading") {
-      document.addEventListener("DOMContentLoaded", initLiveLocationUpdate);
+// Request ride function
+async function requestRide() {
+  if (!currentRideData) {
+    alert("❌ Please calculate price first!");
+    return;
+  }
+
+  const requestBtn = document.getElementById('request-ride-btn');
+  if (requestBtn) {
+    requestBtn.disabled = true;
+    requestBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Requesting...';
+  }
+
+  try {
+    console.log("📤 Sending ride request:", currentRideData);
+
+    const response = await fetch('/create_ride', {
+      method: 'POST',
+      headers: { 
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
+      credentials: 'include',
+      body: JSON.stringify(currentRideData)
+    });
+
+    const data = await response.json();
+
+    if (response.ok) {
+      alert(`✅ Ride requested successfully! 
+      
+Ride ID: ${data.ride_id}
+Pickup: ${currentRideData.pickup_address}
+Dropoff: ${currentRideData.dropoff_address}
+Fare: ₹${currentRideData.fare}
+
+Waiting for driver to accept...`);
+
+      // Clear form
+      const pickupInput = document.getElementById('pickup') || document.getElementById('ride-pickup');
+      const dropoffInput = document.getElementById('dropoff') || document.getElementById('ride-dropoff');
+      if (pickupInput) pickupInput.value = '';
+      if (dropoffInput) dropoffInput.value = '';
+
+      const priceOutput = document.getElementById('price-output') || document.getElementById('ride-price-output');
+      if (priceOutput) {
+        priceOutput.innerHTML = `
+          <div style="background: rgba(16, 185, 129, 0.1); padding: 20px; border-radius: 12px; margin-top: 15px; border-left: 4px solid #10b981;">
+            <h3 style="color: #10b981; margin-bottom: 10px;">✅ Ride Requested!</h3>
+            <p style="margin: 5px 0;">Ride ID: <strong>#${data.ride_id}</strong></p>
+            <p style="margin: 5px 0;">Status: <strong>Waiting for driver...</strong></p>
+            <p style="margin: 15px 0 10px; font-size: 0.9rem; color: #aaa;">
+              Available drivers will see your request on their dashboard.
+            </p>
+            <button 
+              onclick="location.reload()" 
+              style="padding: 10px 20px; background: #10b981; color: white; border: none; border-radius: 6px; cursor: pointer; margin-top: 10px;">
+              Request Another Ride
+            </button>
+          </div>
+        `;
+      }
+
+      currentRideData = null;
+
     } else {
-      initLiveLocationUpdate();
+      alert('❌ ' + (data.error || 'Failed to request ride. Please try again.'));
+      
+      if (requestBtn) {
+        requestBtn.disabled = false;
+        requestBtn.innerHTML = '🚗 Request Ride';
+      }
     }
 
+  } catch (error) {
+    console.error('❌ Request ride error:', error);
+    alert('❌ Network error. Please check your connection and try again.');
+    
+    if (requestBtn) {
+      requestBtn.disabled = false;
+      requestBtn.innerHTML = '🚗 Request Ride';
+    }
+  }
+}
+
+// Make functions globally available
+window.requestRide = requestRide;
+window.showPrice = showPrice;
     // Call this whenever the ride page becomes visible
     function showRidePage() {
       document.getElementById('ride-page').style.display = 'block';
