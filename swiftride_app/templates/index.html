@@ -23,7 +23,313 @@
   <script src="https://unpkg.com/@mapbox/polyline"></script>
   <script src="{{ url_for('static', filename='js/index.js') }}"></script>
 </head>
+<style>
+.ride-status-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+}
 
+.status-header {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  margin-bottom: 30px;
+}
+
+.back-btn {
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  padding: 10px 20px;
+  border-radius: 8px;
+  color: white;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.back-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: translateX(-5px);
+}
+
+.status-card {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border-radius: 16px;
+  padding: 30px;
+  margin-bottom: 30px;
+}
+
+.status-info {
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 12px 24px;
+  border-radius: 25px;
+  font-weight: bold;
+  font-size: 1.1rem;
+  margin-bottom: 15px;
+  animation: pulse 2s infinite;
+}
+
+.status-badge.waiting {
+  background: #ffc107;
+  color: #000;
+}
+
+.status-badge.accepted {
+  background: #10b981;
+  color: white;
+}
+
+.status-badge.in-progress {
+  background: #3b82f6;
+  color: white;
+}
+
+.status-badge.completed {
+  background: #10b981;
+  color: white;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+.driver-info-card {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  background: rgba(16, 185, 129, 0.1);
+  padding: 20px;
+  border-radius: 12px;
+  margin-bottom: 30px;
+  border: 2px solid #10b981;
+}
+
+.driver-avatar-large {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #10b981, #0ea572);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  color: white;
+}
+
+.driver-details-large h3 {
+  margin: 0 0 8px 0;
+  font-size: 1.4rem;
+}
+
+.driver-rating {
+  color: #ffc107;
+  font-size: 1.1rem;
+  margin-bottom: 8px;
+}
+
+.driver-details-large p {
+  margin: 5px 0;
+  color: #aaa;
+}
+
+.trip-details {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 20px;
+  margin-bottom: 30px;
+}
+
+.trip-detail-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 15px;
+  padding: 15px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 10px;
+}
+
+.trip-detail-item i {
+  font-size: 1.5rem;
+  margin-top: 5px;
+}
+
+.trip-detail-item small {
+  display: block;
+  color: #888;
+  font-size: 0.85rem;
+  margin-bottom: 5px;
+}
+
+.trip-detail-item p {
+  margin: 0;
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+.payment-section {
+  background: rgba(255, 255, 255, 0.05);
+  padding: 25px;
+  border-radius: 12px;
+  margin-bottom: 30px;
+}
+
+.payment-section h3 {
+  margin: 0 0 20px 0;
+  font-size: 1.2rem;
+}
+
+.payment-options {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 15px;
+  margin-bottom: 20px;
+}
+
+.payment-option {
+  cursor: pointer;
+}
+
+.payment-option input[type="radio"] {
+  display: none;
+}
+
+.payment-card {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding: 20px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 2px solid transparent;
+  border-radius: 10px;
+  transition: all 0.3s;
+}
+
+.payment-option input[type="radio"]:checked + .payment-card {
+  border-color: #10b981;
+  background: rgba(16, 185, 129, 0.1);
+}
+
+.payment-card:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.payment-card i {
+  font-size: 2rem;
+  color: #10b981;
+}
+
+.payment-card strong {
+  display: block;
+  margin-bottom: 5px;
+}
+
+.payment-card small {
+  color: #888;
+  font-size: 0.85rem;
+}
+
+.ride-actions {
+  display: flex;
+  gap: 15px;
+  justify-content: center;
+}
+
+.status-map-container {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border-radius: 16px;
+  padding: 25px;
+}
+
+.status-map-container h3 {
+  margin: 0 0 20px 0;
+  font-size: 1.3rem;
+}
+
+@media (max-width: 768px) {
+  .driver-info-card {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .trip-details {
+    grid-template-columns: 1fr;
+  }
+
+  .ride-actions {
+    flex-direction: column;
+  }
+
+  .ride-actions button {
+    width: 100%;
+  }
+}
+
+
+
+.wallet-display {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(14, 165, 114, 0.2));
+  border: 2px solid #10b981;
+  border-radius: 20px;
+  color: #10b981;
+  font-weight: 600;
+  font-size: 0.95rem;
+  transition: all 0.3s;
+  cursor: pointer;
+}
+
+.wallet-display:hover {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.3), rgba(14, 165, 114, 0.3));
+  transform: translateY(-2px);
+}
+
+.wallet-display i {
+  font-size: 1.1rem;
+}
+
+#navbar-wallet-balance {
+  font-weight: bold;
+  letter-spacing: 0.5px;
+}
+
+/* Dropdown menu improvements */
+.dropdown-menu a {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 15px;
+  color: white;
+  text-decoration: none;
+  transition: all 0.3s;
+}
+
+.dropdown-menu a:hover {
+  background: rgba(95, 227, 46, 0.1);
+  padding-left: 20px;
+}
+
+.dropdown-menu a i {
+  width: 20px;
+  text-align: center;
+}
+
+.dropdown-menu hr {
+  border: none;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  margin: 10px 0;
+}
+</style>
 <body>
   <!-- Animated background elements -->
   <div class="bg-elements">
@@ -39,8 +345,7 @@
   </div>
 
   <!-- Navigation -->
-  <nav class="navbar">
-    <!-- <img src="{{ url_for('static', filename='images/logo.png') }}" width="30" alt="SwiftRide Logo" class=""> -->
+ <nav class="navbar">
     <a href="#" class="nav-logo" onclick="showPage('home')">SwiftRide</a>
     
     <div class="nav-links" id="nav-links">
@@ -48,7 +353,13 @@
       <a href="#" class="nav-link" onclick="showPage('ride')">Ride</a>
 
       {% if session.get('user_id') %}
-        <!-- Authenticated view -->
+        <!-- User is logged in - Show wallet balance -->
+        <div class="wallet-display" id="user-wallet-display">
+          <i class="fas fa-wallet"></i>
+          <span id="navbar-wallet-balance">₹2000</span>
+        </div>
+
+        <!-- User dropdown -->
         <div class="user-dropdown">
           <button class="user-btn" id="userBtn">
             {{ session.get('firstName') or 'User' }}
@@ -61,25 +372,31 @@
               <img src="{{ url_for('static', filename='images/profile.png') }}" alt="Profile" width="30">
             </div>
             <hr>
-            <a href="#">Help</a>
-            <a href="#">Wallet</a>
-            <a href="#" onclick="showPage('ride')">Ride</a>
-            <a href="/driver/dashboard">Driver Dashboard</a>
+            <a href="#" onclick="showWalletDetails()">
+              <i class="fas fa-wallet"></i> My Wallet
+            </a>
+            <a href="#">
+              <i class="fas fa-history"></i> Ride History
+            </a>
+            <a href="#" onclick="showPage('ride')">
+              <i class="fas fa-car"></i> Book Ride
+            </a>
             <hr>
-            <a href="#" id="logout-btn">Logout</a>
+            <a href="#" id="logout-btn">
+              <i class="fas fa-sign-out-alt"></i> Logout
+            </a>
           </div>
         </div>
       {% else %}
         <!-- Not logged in -->
-        <!-- <a href="#" class="nav-link" onclick="showPage('login')">Login</a> -->
         <a href="#" class="nav-link" onclick="showPage('signup')">Users</a>
-        <!-- <a href="#" class="nav-link" onclick="showPage('driver-login')">Driver Login</a> -->
         <a href="#" class="nav-link" onclick="showPage('driver-signup')">Driver's</a>
       {% endif %}
 
       <button class="theme-toggle" onclick="toggleTheme()">💡</button>
     </div>
   </nav>
+
 
   <!-- Home Page -->
   <div id="home-page" class="page-container active">
@@ -837,6 +1154,140 @@
   </div>
 </div>
 
+<!-- Add this new page section to your index.html -->
+
+<!-- Ride Status Page (for users to track their ride) -->
+<div id="ride-status-page" class="page-container">
+  <div class="ride-status-container">
+    <div class="status-header">
+      <button class="back-btn" onclick="showPage('home')">
+        <i class="fas fa-arrow-left"></i> Back
+      </button>
+      <h2>Your Ride Status</h2>
+    </div>
+
+    <!-- Ride Status Card -->
+    <div class="status-card" id="status-card">
+      <div class="status-info">
+        <div class="status-badge" id="ride-status-badge">
+          <i class="fas fa-spinner fa-spin"></i> Waiting for driver...
+        </div>
+        <p id="status-message">Finding a driver for you...</p>
+      </div>
+
+      <!-- Driver Info (shown when accepted) -->
+      <div class="driver-info-card" id="driver-info-card" style="display: none;">
+        <div class="driver-avatar-large">
+          <i class="fas fa-user"></i>
+        </div>
+        <div class="driver-details-large">
+          <h3 id="driver-name-display">Driver Name</h3>
+          <div class="driver-rating">
+            <i class="fas fa-star"></i>
+            <span id="driver-rating-display">5.0</span>
+          </div>
+          <p id="driver-vehicle-display">Vehicle Type - Plate Number</p>
+          <p id="driver-phone-display"><i class="fas fa-phone"></i> Phone Number</p>
+        </div>
+      </div>
+
+      <!-- Trip Details -->
+      <div class="trip-details">
+        <div class="trip-detail-item">
+          <i class="fas fa-map-marker-alt" style="color: #10b981;"></i>
+          <div>
+            <small>Pickup Location</small>
+            <p id="pickup-display">Loading...</p>
+          </div>
+        </div>
+        <div class="trip-detail-item">
+          <i class="fas fa-flag" style="color: #ef4444;"></i>
+          <div>
+            <small>Drop Location</small>
+            <p id="dropoff-display">Loading...</p>
+          </div>
+        </div>
+        <div class="trip-detail-item">
+          <i class="fas fa-road"></i>
+          <div>
+            <small>Distance</small>
+            <p id="distance-display">0 km</p>
+          </div>
+        </div>
+        <div class="trip-detail-item">
+          <i class="fas fa-rupee-sign"></i>
+          <div>
+            <small>Fare</small>
+            <p id="fare-display">₹0</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Payment Options -->
+      <div class="payment-section" id="payment-section" style="display: none;">
+        <h3><i class="fas fa-wallet"></i> Payment via Wallet</h3>
+        
+        <!-- Wallet Balance Display -->
+        <div class="wallet-balance-display">
+          <div class="balance-card">
+            <div class="balance-icon">
+              <i class="fas fa-wallet"></i>
+            </div>
+            <div class="balance-info">
+              <small>Your Wallet Balance</small>
+              <h2 id="user-wallet-balance">₹2000.00</h2>
+            </div>
+          </div>
+          
+          <div class="fare-breakdown">
+            <div class="fare-item">
+              <span>Ride Fare:</span>
+              <span id="payment-fare-display">₹0</span>
+            </div>
+            <div class="fare-item remaining">
+              <span>Remaining Balance:</span>
+              <span id="remaining-balance">₹2000.00</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="payment-note">
+          <i class="fas fa-info-circle"></i>
+          <p>Amount will be deducted from your wallet and transferred to driver's wallet upon confirmation.</p>
+        </div>
+
+        <button class="btn btn-primary btn-pay" id="confirm-payment-btn" style="display: none;">
+          <i class="fas fa-check-circle"></i> Pay ₹<span id="pay-amount">0</span> from Wallet
+        </button>
+
+        <button class="btn btn-outline" id="add-money-btn" style="display: none; margin-top: 10px;">
+          <i class="fas fa-plus-circle"></i> Add Money to Wallet
+        </button>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="ride-actions">
+        <button class="btn btn-danger" id="cancel-ride-btn" onclick="cancelCurrentRide()">
+          <i class="fas fa-times"></i> Cancel Ride
+        </button>
+        <button class="btn btn-outline" onclick="refreshRideStatus()">
+          <i class="fas fa-sync-alt"></i> Refresh Status
+        </button>
+      </div>
+    </div>
+
+    <!-- Live Map with Driver Location -->
+    <div class="status-map-container">
+      <h3><i class="fas fa-map-marked-alt"></i> Live Tracking</h3>
+      <div id="user-tracking-map" style="height: 450px; border-radius: 12px; overflow: hidden;"></div>
+    </div>
+  </div>
+</div>
+
+
+
+
+
   <!-- Footer -->
   <!-- <footer id="main-footer" class="footer">
     <div class="footer-container">
@@ -1317,6 +1768,55 @@ window.addEventListener('load', function() {
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+// Add this to your JavaScript - Auto-update wallet balance in navbar
+async function updateNavbarWalletBalance() {
+  const walletDisplay = document.getElementById('navbar-wallet-balance');
+  if (!walletDisplay) return;
+
+  try {
+    const response = await fetch('/user/wallet_balance', {
+      credentials: 'include'
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      walletDisplay.textContent = `₹${data.wallet_balance.toFixed(2)}`;
+    }
+  } catch (error) {
+    console.error('Error updating wallet balance:', error);
+  }
+}
+
+// Show wallet details modal
+function showWalletDetails() {
+  alert('Wallet details feature coming soon! You can view your balance in the navbar.');
+  // TODO: Create a proper wallet details modal/page
+}
+
+// Update wallet balance when page loads
+document.addEventListener('DOMContentLoaded', function() {
+  updateNavbarWalletBalance();
+  
+  // Refresh wallet balance every 30 seconds
+  setInterval(updateNavbarWalletBalance, 30000);
+});
+
+// Update wallet balance after payment
+window.addEventListener('paymentCompleted', function() {
+  updateNavbarWalletBalance();
+});
 </script>
 
 

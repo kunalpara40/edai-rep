@@ -641,12 +641,85 @@
             }
         });
 
+        // Auto-refresh available rides
+        function autoRefreshRides() {
+            showAvailableRides();
+            loadAvailableRidesCards();
+        }
+
+        // Load available rides into cards
+        async function loadAvailableRidesCards() {
+            try {
+                const response = await fetch('/driver/available_rides', {
+                    credentials: 'include'
+                });
+                const data = await response.json();
+
+                const container = document.getElementById('available-rides');
+                if (!container) return;
+
+                if (data.rides && data.rides.length > 0) {
+                    container.innerHTML = data.rides.map(ride => `
+                        <div class="ride-card">
+                            <div class="ride-header">
+                                <div class="ride-id">Ride #${ride.ride_id}</div>
+                                <div class="ride-status">Requested</div>
+                            </div>
+                            <div class="ride-details">
+                                <div class="ride-detail">
+                                    <span><i class="fas fa-user"></i> Passenger</span>
+                                    <span>${ride.user_firstName} ${ride.user_lastName}</span>
+                                </div>
+                                <div class="ride-detail">
+                                    <span><i class="fas fa-map-marker-alt"></i> Pickup</span>
+                                    <span>${ride.pickup_address || 'Address N/A'}</span>
+                                </div>
+                                <div class="ride-detail">
+                                    <span><i class="fas fa-flag"></i> Dropoff</span>
+                                    <span>${ride.dropoff_address || 'Address N/A'}</span>
+                                </div>
+                                <div class="ride-detail">
+                                    <span><i class="fas fa-road"></i> Distance</span>
+                                    <span>${ride.distance} km</span>
+                                </div>
+                                <div class="ride-detail">
+                                    <span><i class="fas fa-rupee-sign"></i> Fare</span>
+                                    <span>₹${ride.fare}</span>
+                                </div>
+                                <div class="ride-detail">
+                                    <span><i class="fas fa-clock"></i> Requested</span>
+                                    <span>${new Date(ride.requested_at).toLocaleTimeString()}</span>
+                                </div>
+                            </div>
+                            <div class="ride-actions">
+                                <button class="btn btn-outline" onclick="viewRideOnMap(${ride.pickup_lat}, ${ride.pickup_lng}, ${ride.drop_lat}, ${ride.drop_lng})">View on Map</button>
+                                <button class="btn btn-primary" onclick="acceptRide(${ride.ride_id})">Accept Ride</button>
+                            </div>
+                        </div>
+                    `).join('');
+                } else {
+                    container.innerHTML = `
+                        <div class="ride-card">
+                            <p style="text-align: center; color: #aaa;">
+                                <i class="fas fa-hourglass-half" style="font-size: 2rem; display: block; margin-bottom: 10px;"></i>
+                                No ride requests at the moment.<br>
+                                <small>New rides will appear automatically</small>
+                            </p>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                console.error('Error loading rides:', error);
+            }
+        }
+
         // Event listeners
         document.getElementById('locate-me').addEventListener('click', locateDriver);
         document.getElementById('show-rides').addEventListener('click', showAvailableRides);
         document.getElementById('refresh-map').addEventListener('click', () => {
             initDriverMap();
             locateDriver();
+            loadAvailableRidesCards();
         });
 
         // Initialize map when page loads
@@ -654,6 +727,10 @@
             initDriverMap();
             // Auto-locate driver after 1 second
             setTimeout(locateDriver, 1000);
+            // Load available rides
+            loadAvailableRidesCards();
+            // Auto-refresh rides every 15 seconds
+            setInterval(autoRefreshRides, 15000);
         });
     </script>
 </body>

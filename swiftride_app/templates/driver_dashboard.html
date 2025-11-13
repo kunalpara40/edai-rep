@@ -356,10 +356,13 @@
                 <div class="number" id="rating">{{ driver.rating or '5.0' }}</div>
                 <div class="label">Average Rating</div>
             </div>
-            <div class="stat-card">
+            <div class="stat-card wallet-card" onclick="showDriverWallet()">
                 <i class="fas fa-wallet"></i>
-                <div class="number" id="earnings">₹{{ stats.total_earnings or 0 }}</div>
-                <div class="label">Total Earnings</div>
+                <div class="number" id="wallet-balance">₹{{ driver.wallet_balance or '2500' }}</div>
+                <div class="label">Wallet Balance</div>
+                <small style="color: #10b981; font-size: 0.8rem; margin-top: 5px;">
+                    <i class="fas fa-arrow-up"></i> Click to view
+                </small>
             </div>
             <div class="stat-card">
                 <i class="fas fa-map-marked-alt"></i>
@@ -475,6 +478,9 @@
                         driverMarker.setLatLng([currentPosition.lat, currentPosition.lng]);
                         driverMarker.openPopup();
 
+                        // Update location on server
+                        updateDriverLocation(currentPosition.lat, currentPosition.lng);
+
                         btn.disabled = false;
                         btn.innerHTML = '<i class="fas fa-crosshairs"></i> Find My Location';
                     },
@@ -490,6 +496,44 @@
                 btn.disabled = false;
                 btn.innerHTML = '<i class="fas fa-crosshairs"></i> Find My Location';
             }
+        }
+
+        // Update driver location on server
+        async function updateDriverLocation(lat, lng) {
+            try {
+                await fetch('/driver/update_location', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ lat, lng })
+                });
+                console.log('✅ Location updated on server');
+            } catch (error) {
+                console.error('Failed to update location:', error);
+            }
+        }
+
+        // Auto-update driver location every 30 seconds
+        function startLocationTracking() {
+            setInterval(() => {
+                if (navigator.geolocation) {
+                    navigator.geolocation.getCurrentPosition(
+                        (position) => {
+                            currentPosition = {
+                                lat: position.coords.latitude,
+                                lng: position.coords.longitude
+                            };
+                            driverMarker.setLatLng([currentPosition.lat, currentPosition.lng]);
+                            updateDriverLocation(currentPosition.lat, currentPosition.lng);
+                            console.log('📍 Auto-updated location');
+                        },
+                        (error) => {
+                            console.error('Auto-location error:', error);
+                        },
+                        { enableHighAccuracy: true }
+                    );
+                }
+            }, 30000); // Update every 30 seconds
         }
 
         // Show available rides on map
@@ -731,6 +775,8 @@
             loadAvailableRidesCards();
             // Auto-refresh rides every 15 seconds
             setInterval(autoRefreshRides, 15000);
+            // Start continuous location tracking
+            startLocationTracking();
         });
     </script>
 </body>
