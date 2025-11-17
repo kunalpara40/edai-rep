@@ -59,7 +59,29 @@
 
 (function () {
   'use strict';
+// Toggle theme function
+function toggleTheme() {
+  document.body.classList.toggle('light-mode');
+  
+  // Save preference to localStorage
+  const isLightMode = document.body.classList.contains('light-mode');
+  localStorage.setItem('theme', isLightMode ? 'light' : 'dark');
+  
+  // Optional: Change emoji on button
+  const themeBtn = document.querySelector('.theme-toggle');
+  themeBtn.textContent = isLightMode ? '🌙' : '💡';
+}
 
+// Load saved theme on page load
+document.addEventListener('DOMContentLoaded', function() {
+  const savedTheme = localStorage.getItem('theme');
+  const themeBtn = document.querySelector('.theme-toggle');
+  
+  if (savedTheme === 'light') {
+    document.body.classList.add('light-mode');
+    if (themeBtn) themeBtn.textContent = '🌙';
+  }
+});
   /* ---------- Page navigation & footer ---------- */
   // function showPage(pageId) {
   //   console.log('🔍 showPage called with:', pageId); // Debug log
@@ -894,11 +916,12 @@ function initRideMap(containerId = "map-container") {
 
     rideMap = L.map(containerId).setView([18.5204, 73.8567], 12);
 
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+  // Use dark mode tile layer
+    L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
       maxZoom: 19,
-      attribution: "&copy; OpenStreetMap contributors",
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+      subdomains: 'abcd'
     }).addTo(rideMap);
-    
     setTimeout(() => {
       if (rideMap) {
         try {
@@ -1517,7 +1540,7 @@ function createRouteWithRequestButton(pickupCoords, dropCoords, pickupAddress, d
             id="request-ride-btn" 
             onclick="requestRide()"
             style="width: 100%; padding: 12px; background: linear-gradient(135deg, #5fe32e, #0ea572); color: white; border: none; border-radius: 8px; font-weight: bold; font-size: 1rem; cursor: pointer; transition: all 0.3s;">
-            🚗 Request Ride
+            🚗 Search 
           </button>
           <div style="margin-top: 10px; padding: 8px; background: #10b98120; border-left: 3px solid #10b981; font-size: 12px; border-radius: 4px;">
             ✅ <em>Route follows actual roads</em>
@@ -1556,6 +1579,7 @@ function createRouteWithRequestButton(pickupCoords, dropCoords, pickupAddress, d
 }
 
 // Request ride function
+// Request ride function - UPDATED WITH LIVE TRACKING
 async function requestRide() {
   if (!currentRideData) {
     alert("❌ Please calculate price first!");
@@ -1584,41 +1608,32 @@ async function requestRide() {
     const data = await response.json();
 
     if (response.ok) {
-      alert(`✅ Ride requested successfully! 
+      console.log('✅ Ride created successfully:', data.ride_id);
       
-Ride ID: ${data.ride_id}
-Pickup: ${currentRideData.pickup_address}
-Dropoff: ${currentRideData.dropoff_address}
-Fare: ₹${currentRideData.fare}
-
-Waiting for driver to accept...`);
-
-      // Clear form
+      // ✅ CLEAR FORM DATA
+      currentRideData = null;
       const pickupInput = document.getElementById('pickup') || document.getElementById('ride-pickup');
       const dropoffInput = document.getElementById('dropoff') || document.getElementById('ride-dropoff');
       if (pickupInput) pickupInput.value = '';
       if (dropoffInput) dropoffInput.value = '';
 
-      const priceOutput = document.getElementById('price-output') || document.getElementById('ride-price-output');
-      if (priceOutput) {
-        priceOutput.innerHTML = `
-          <div style="background: rgba(16, 185, 129, 0.1); padding: 20px; border-radius: 12px; margin-top: 15px; border-left: 4px solid #10b981;">
-            <h3 style="color: #10b981; margin-bottom: 10px;">✅ Ride Requested!</h3>
-            <p style="margin: 5px 0;">Ride ID: <strong>#${data.ride_id}</strong></p>
-            <p style="margin: 5px 0;">Status: <strong>Waiting for driver...</strong></p>
-            <p style="margin: 15px 0 10px; font-size: 0.9rem; color: #aaa;">
-              Available drivers will see your request on their dashboard.
-            </p>
-            <button 
-              onclick="location.reload()" 
-              style="padding: 10px 20px; background: #10b981; color: white; border: none; border-radius: 6px; cursor: pointer; margin-top: 10px;">
-              Request Another Ride
-            </button>
-          </div>
-        `;
-      }
-
-      currentRideData = null;
+      // ✅ SHOW RIDE STATUS PAGE IMMEDIATELY
+      currentRideId = data.ride_id;
+      showPage('ride-status');
+      
+      // ✅ INITIALIZE TRACKING MAP & START POLLING
+      setTimeout(() => {
+        console.log('🗺️ Initializing tracking map for ride:', data.ride_id);
+        initTrackingMap();
+        
+        // Load initial status
+        loadRideStatus();
+        
+        // Start auto-refresh polling
+        startRideStatusPolling(data.ride_id);
+        
+        console.log('✅ Live tracking started - checking every 3 seconds');
+      }, 500);
 
     } else {
       alert('❌ ' + (data.error || 'Failed to request ride. Please try again.'));
@@ -1640,10 +1655,169 @@ Waiting for driver to accept...`);
   }
 }
 
+// Make sure these functions are also present in your code:
+
+// Start polling for ride status updates
+function startRideStatusPolling(rideId) {
+  console.log('🔄 Starting status polling for ride:', rideId);
+  
+  // Clear any existing interval
+  if (statusUpdateInterval) {
+    clearInterval(statusUpdateInterval);
+  }
+  
+  // Initial update
+  updateRideStatus(rideId);
+  
+  // Poll every 3 seconds
+  statusUpdateInterval = setInterval(() => {
+    console.log('⏰ Checking ride status...', new Date().toLocaleTimeString());
+    updateRideStatus(rideId);
+  }, 3000);
+}
+
+// Stop polling
+function stopRideStatusPolling() {
+  console.log('⏹️ Stopping status polling');
+  if (statusUpdateInterval) {
+    clearInterval(statusUpdateInterval);
+    statusUpdateInterval = null;
+  }
+}
+
+// Update ride status from server
+async function updateRideStatus(rideId) {
+  try {
+    const response = await fetch(`/user/ride_updates/${rideId}`, {
+      credentials: 'include'
+    });
+    
+    if (!response.ok) {
+      console.error('❌ Failed to fetch ride updates:', response.status);
+      return;
+    }
+    
+    const data = await response.json();
+    console.log('📊 Ride status update:', data.ride.status);
+    
+    handleRideStatusUpdate(data.ride);
+    
+  } catch (error) {
+    console.error('❌ Error fetching ride updates:', error);
+  }
+}
+
+// Handle ride status updates
+function handleRideStatusUpdate(ride) {
+  const statusBadge = document.getElementById('ride-status-badge');
+  const statusMessage = document.getElementById('status-message');
+  
+  if (!statusBadge || !statusMessage) {
+    console.warn('⚠️ Status elements not found');
+    return;
+  }
+  
+  console.log('🔄 Updating UI for status:', ride.status);
+  
+  switch(ride.status) {
+    case 'requested':
+      statusBadge.className = 'status-badge waiting';
+      statusBadge.innerHTML = '<i class="fas fa-hourglass-half"></i> Waiting for driver...';
+      statusMessage.textContent = 'Searching for available drivers nearby...';
+      break;
+      
+    case 'accepted':
+      console.log('✅ DRIVER ACCEPTED! Showing driver info...');
+      statusBadge.className = 'status-badge accepted';
+      statusBadge.innerHTML = '<i class="fas fa-check-circle"></i> Driver Accepted!';
+      statusMessage.textContent = `${ride.driver_name || 'Your driver'} is on the way to pick you up!`;
+      
+      // Show driver info card
+      showDriverInfoCard(ride);
+      
+      // Show payment section
+      showPaymentOptions();
+      
+      // Update map with driver location
+      if (ride.driver_lat && ride.driver_lng) {
+        updateDriverLocationOnMap(ride.driver_lat, ride.driver_lng);
+      }
+      
+      // Play notification sound (optional)
+      try {
+        new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBzdmvbXx26BdFwY5TKHn9rJrHAU+csjt3ZJGDAg9PZnp5qxWGAl1kMzj6rFbGg0qLVDpwdGHLweE3fXj+7eiXiIOl9f'+encodeURIComponent('notification'));
+      } catch(e) {}
+      break;
+      
+    case 'in_progress':
+      statusBadge.className = 'status-badge in-progress';
+      statusBadge.innerHTML = '<i class="fas fa-car"></i> Ride in Progress';
+      statusMessage.textContent = 'Enjoy your ride! Your driver is taking you to your destination.';
+      break;
+      
+    case 'completed':
+      statusBadge.className = 'status-badge completed';
+      statusBadge.innerHTML = '<i class="fas fa-flag-checkered"></i> Ride Completed';
+      statusMessage.textContent = 'Your ride is complete! Please proceed with payment.';
+      
+      // Stop polling
+      stopRideStatusPolling();
+      
+      // Show payment options if not paid
+      if (ride.payment_status !== 'paid') {
+        showPaymentSection(ride);
+      }
+      break;
+      
+    case 'cancelled':
+      statusBadge.className = 'status-badge cancelled';
+      statusBadge.innerHTML = '<i class="fas fa-times-circle"></i> Ride Cancelled';
+      statusMessage.textContent = 'This ride has been cancelled.';
+      stopRideStatusPolling();
+      break;
+  }
+}
+
+// Show driver info card
+function showDriverInfoCard(ride) {
+  const driverCard = document.getElementById('driver-info-card');
+  if (!driverCard) {
+    console.warn('⚠️ Driver info card not found');
+    return;
+  }
+  
+  console.log('👤 Showing driver info:', ride.driver_name);
+  
+  driverCard.style.display = 'flex';
+  
+  document.getElementById('driver-name-display').textContent = ride.driver_name || 'Driver';
+  document.getElementById('driver-rating-display').textContent = ride.driver_rating || '5.0';
+  document.getElementById('driver-vehicle-display').textContent = 
+    `${ride.vehicle_type || 'Vehicle'} - ${ride.license_plate || 'N/A'}`;
+  document.getElementById('driver-phone-display').innerHTML = 
+    `<i class="fas fa-phone"></i> ${ride.driver_phone || 'N/A'}`;
+}
+
+// Clean up when leaving page
+window.addEventListener('beforeunload', function() {
+  stopRideStatusPolling();
+});
+
+// Also stop polling when showing different page
+const originalShowPage = window.showPage;
+window.showPage = function(pageId) {
+  if (pageId !== 'ride-status') {
+    stopRideStatusPolling();
+  }
+  if (originalShowPage) {
+    originalShowPage(pageId);
+  }
+};
+
 // Make functions globally available
 window.requestRide = requestRide;
-window.showPrice = showPrice;
-
+window.startRideStatusPolling = startRideStatusPolling;
+window.stopRideStatusPolling = stopRideStatusPolling;
 
 
 
@@ -2027,7 +2201,35 @@ async function cancelCurrentRide() {
 
 // Confirm payment
 // Replace the confirmPayment function and related code in your index.js
+// User confirms payment
+async function confirmPayment(rideId) {
+    try {
+        const response = await fetch('/user/confirm_payment', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ride_id: rideId })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            alert(`Payment successful! ₹${data.fare} paid. New balance: ₹${data.user_new_balance}`);
+            updateWalletBalance();
+        } else {
+            alert(data.error);
+        }
+    } catch (error) {
+        console.error('Payment error:', error);
+        alert('Payment failed');
+    }
+}
 
+// Get wallet balance
+async function updateWalletBalance() {
+    const response = await fetch('/user/wallet_balance');
+    const data = await response.json();
+    document.getElementById('wallet-balance').innerText = `₹${data.wallet_balance}`;
+}
 // Confirm payment - FIXED VERSION
 async function confirmPayment() {
   if (!currentRideId) return;

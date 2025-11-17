@@ -98,23 +98,30 @@ def login():
         cursor.close()
         conn.close()
 
-        if user and check_password_hash(str(user["password"]), str(data.get("password", ""))):
-            session.clear()
-            session["user_id"] = user["id"]
-            session["firstName"] = user.get("firstName", "")
-            session["email"] = user.get("email", "")
-            session.permanent = True
+        if user:
+            # Access user data correctly based on whether it's a dict or tuple
+            user_password = user.get("password") if isinstance(user, dict) else user[4]  # password is at index 4
+            user_id = user.get("id") if isinstance(user, dict) else user[0]  # id is at index 0
+            first_name = user.get("firstName") if isinstance(user, dict) else user[1]  # firstName is at index 1
+            email = user.get("email") if isinstance(user, dict) else user[3]  # email is at index 3
             
-            return jsonify({
-                "message": "Login successful!",
-                "user": {
-                    "id": user["id"],
-                    "firstName": user.get("firstName", ""),
-                    "email": user.get("email", "")
-                }
-            }), 200
-        else:
-            return jsonify({"error": "Invalid email or password"}), 401
+            if check_password_hash(str(user_password), str(data.get("password", ""))):
+                session.clear()
+                session["user_id"] = user_id
+                session["firstName"] = first_name
+                session["email"] = email
+                session.permanent = True
+                
+                return jsonify({
+                    "message": "Login successful!",
+                    "user": {
+                        "id": user_id,
+                        "firstName": first_name,
+                        "email": email
+                    }
+                }), 200
+        
+        return jsonify({"error": "Invalid email or password"}), 401
     except Exception as e:
         print(f"Login error: {e}")
         return jsonify({"error": "Server error", "details": str(e)}), 500
@@ -201,116 +208,125 @@ def delete_account():
         return jsonify({"error": "Delete failed", "details": str(e)}), 500
 
 # ==================== DRIVER AUTH ====================
-# @app.route("/driver/login", methods=["GET", "POST"])
-# def driver_login():
-   
-#     if request.method == "GET":
-#         if session.get("driver_id"):
-#             return redirect("/driver/dashboard")
-#         return render_template("index.html")
+@app.route("/driver/login", methods=["POST"])
+def driver_login():
+    data = request.get_json(silent=True) or {}
+    print("\n=== DRIVER LOGIN ATTEMPT (DEBUG) ===")
+    print("Raw payload:", data)
 
-    
-#     data = request.get_json(silent=True) or {}
-#     print("\n=== DRIVER LOGIN ATTEMPT (DEBUG) ===")
-#     print("Raw payload:", data)
+    phone = (data.get("phone") or "").strip()
+    email = (data.get("email") or "").strip()
+    password = data.get("password") or ""
 
-#     phone = (data.get("phone") or "").strip()
-#     email = (data.get("email") or "").strip()
-#     password = data.get("password") or ""
+    if not password or (not phone and not email):
+        print("❌ Missing phone/email or password")
+        return jsonify({"error": "Phone/email and password required"}), 400
 
-  
-#     if not password or (not phone and not email):
-#         print("❌ Missing phone/email or password")
-#         return jsonify({"error": "Phone/email and password required"}), 400
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
 
-#     try:
-#         conn = get_db_connection()
-#         cursor = conn.cursor(dictionary=True)
+        if phone:
+            print("Looking up driver by phone:", phone)
+            cursor.execute("SELECT * FROM drivers WHERE phone = %s LIMIT 1", (phone,))
+        else:
+            print("Looking up driver by email:", email)
+            cursor.execute("SELECT * FROM drivers WHERE email = %s LIMIT 1", (email,))
 
-       
-#         if phone:
-#             print("Looking up driver by phone:", phone)
-#             cursor.execute("SELECT * FROM drivers WHERE phone = %s LIMIT 1", (phone,))
-#         else:
-#             print("Looking up driver by email:", email)
-#             cursor.execute("SELECT * FROM drivers WHERE email = %s LIMIT 1", (email,))
+        driver = cursor.fetchone()
+        cursor.close()
+        conn.close()
 
-#         driver = cursor.fetchone()
-#         cursor.close()
-#         conn.close()
+        print("DB row (driver):", driver)
 
-#         print("DB row (driver):", driver)
+        if not driver:
+            print("❌ No driver found for given identifier")
+            return jsonify({"error": "No driver found with provided phone/email"}), 404
 
-#         if not driver:
-#             print("❌ No driver found for given identifier")
-#             return jsonify({"error": "No driver found with provided phone/email"}), 404
+        # Access driver data correctly based on whether it's a dict or tuple
+        stored_pw = None
+        if isinstance(driver, dict):
+            # Look for password field in dict
+            for key in ("password", "password_hash", "pw", "pass", "passwd"):
+                if key in driver and driver[key]:
+                    stored_pw = driver[key]
+                    print(f"Found password column: {key}")
+                    break
+        else:
+            # For tuple, assume password is at index 6 (based on the SELECT query)
+            stored_pw = driver[6] if len(driver) > 6 else None
+            print("Found password at index 6")
 
+        if stored_pw is None:
+            print("Driver DB columns:", list(driver.keys()) if isinstance(driver, dict) else f"Tuple with {len(driver)} elements")
+            return jsonify({"error": "Server misconfigured: no password column found for driver"}), 500
 
-#         stored_pw = None
-#         for key in ("password", "password_hash", "pw", "pass", "passwd"):
-#             if key in driver and driver[key]:
-#                 stored_pw = driver[key]
-#                 print(f"Found password column: {key}")
-#                 break
-#         if stored_pw is None:
-            
-#             print("Driver DB columns:", list(driver.keys()))
-#             return jsonify({"error": "Server misconfigured: no password column found for driver"}), 500
+        def looks_like_hash(s):
+            return isinstance(s, str) and s.startswith(("pbkdf2:sha256","argon2","bcrypt","sha256","scrypt"))
 
-     
-#         def looks_like_hash(s):
-#             return isinstance(s, str) and s.startswith(("pbkdf2:sha256","argon2","bcrypt","sha256"))
+        if looks_like_hash(str(stored_pw)):
+            pw_ok = check_password_hash(str(stored_pw), str(password))
+            print("Password check (hashed):", pw_ok)
+        else:
+            pw_ok = (str(stored_pw) == str(password))
+            print("Password check (plain compare):", pw_ok, "| stored:", stored_pw)
 
-#         if looks_like_hash(stored_pw):
-#             pw_ok = check_password_hash(stored_pw, password)
-#             print("Password check (hashed):", pw_ok)
-#         else:
-          
-#             pw_ok = (str(stored_pw) == str(password))
-#             print("Password check (plain compare):", pw_ok, "| stored:", stored_pw)
+        if not pw_ok:
+            print("❌ Invalid password")
+            return jsonify({"error": "Invalid credentials"}), 401
 
-#         if not pw_ok:
-#             print("❌ Invalid password")
-#             return jsonify({"error": "Invalid credentials"}), 401
+        # Access driver ID correctly
+        driver_id = None
+        if isinstance(driver, dict):
+            driver_id = driver.get("driver_id") or driver.get("id") or driver.get("user_id")
+        else:
+            # Assume driver_id is at index 0
+            driver_id = driver[0] if len(driver) > 0 else None
 
+        try:
+            driver_id = int(driver_id) if driver_id is not None else None
+        except Exception:
+            pass
 
-#         driver_id = driver.get("driver_id") or driver.get("id") or driver.get("user_id")
-#         try:
-#             driver_id = int(driver_id) if driver_id is not None else None
-#         except Exception:
-#             pass
+        session.clear()
+        if driver_id:
+            session["driver_id"] = driver_id
+        else:
+            session["driver_id"] = driver.get("phone") or driver.get("email") if isinstance(driver, dict) else (driver[3] if len(driver) > 3 else None)
 
-#         session.clear()
-#         if driver_id:
-#             session["driver_id"] = driver_id
-#         else:
-          
-#             session["driver_id"] = driver.get("phone") or driver.get("email")
+        # Access driver name and email correctly
+        driver_first_name = ""
+        driver_email = ""
+        if isinstance(driver, dict):
+            driver_first_name = str(driver.get("firstName") or driver.get("full_name") or "")
+            driver_email = str(driver.get("email") or "")
+        else:
+            # firstName at index 1, full_name at index 3, email at index 4
+            driver_first_name = str(driver[1] if len(driver) > 1 else driver[3] if len(driver) > 3 else "")
+            driver_email = str(driver[4] if len(driver) > 4 else "")
 
-#         session["driver_firstName"] = str(driver.get("firstName") or driver.get("full_name") or "")
-#         session["driver_email"] = str(driver.get("email") or "")
-#         session["is_driver"] = True
-#         session.permanent = True
-#         session.modified = True
+        session["driver_firstName"] = driver_first_name
+        session["driver_email"] = driver_email
+        session["is_driver"] = True
+        session.permanent = True
+        session.modified = True
 
-#         print(f"✅ Driver login successful. session driver_id: {session['driver_id']}")
+        print(f"✅ Driver login successful. session driver_id: {session['driver_id']}")
 
-#         return jsonify({
-#             "message": "Driver login successful!",
-#             "redirect": "/driver/dashboard",
-#             "driver": {
-#                 "id": session.get("driver_id"),
-#                 "firstName": session.get("driver_firstName"),
-#                 "email": session.get("driver_email")
-#             }
-#         }), 200
+        return jsonify({
+            "message": "Driver login successful!",
+            "redirect": "/driver/dashboard",
+            "driver": {
+                "id": session.get("driver_id"),
+                "firstName": session.get("driver_firstName"),
+                "email": session.get("driver_email")
+            }
+        }), 200
 
-#     except Exception as e:
-#         print("❌ Exception in driver_login:", e)
-#         import traceback; traceback.print_exc()
-#         return jsonify({"error": "Server error", "details": str(e)}), 500
-
-
+    except Exception as e:
+        print("❌ Exception in driver_login:", e)
+        import traceback; traceback.print_exc()
+        return jsonify({"error": "Server error", "details": str(e)}), 500
 
 # -------------------- NEW: DRIVER SIGNUP --------------------
 # This route accepts both JSON and multipart/form-data (file upload).
@@ -370,6 +386,8 @@ def driver_signup():
     print(f"lastName: {lastName}")
     print(f"email: {email}")
     print(f"phone: {phone}")
+
+
     print(f"license_no: {license_no}")
     print(f"vehicle_type: {vehicle_type}")
     print(f"license_path: {license_path}")
@@ -446,42 +464,30 @@ def driver_signup():
         return jsonify({"error": "Server error", "details": str(e)}), 500
 # -------------------- end driver signup --------------------
 
-@app.route("/driver/login", methods=["GET", "POST"])
-def driver_login():
-    if request.method == "GET":
-        if session.get("driver_id"):
-            return redirect("/driver/dashboard")
-        return render_template("index.html")
-
-    data = request.get_json(silent=True) or {}
+    print("\n=== DRIVER LOGIN ATTEMPT ===")
     
-    print("\n=== DRIVER LOGIN DEBUG ===")
-    print("Payload received:", data)
-
-    phone = (data.get("phone") or "").strip()
-    email = (data.get("email") or "").strip()
-    password = data.get("password") or ""
-
-    print(f"Phone: {phone}")
-    print(f"Email: {email}")
-    print(f"Password provided: {bool(password)}")
-
-    if not password or (not phone and not email):
-        print("❌ Missing credentials")
-        return jsonify({"error": "Phone/email and password required"}), 400
+    data = request.get_json()
+    phone = data.get("phone")
+    password = data.get("password")
+    
+    print(f"Login attempt - Phone: {phone}")
+    
+    if not phone or not password:
+        return jsonify({"error": "Phone and password required"}), 400
 
     try:
         conn = get_db_connection()
         cursor = conn.cursor(dictionary=True)
-
-        # Lookup driver by phone or email
-        if phone:
-            print(f"🔍 Looking up driver by phone: {phone}")
-            cursor.execute("SELECT * FROM drivers WHERE phone = %s LIMIT 1", (phone,))
-        else:
-            print(f"🔍 Looking up driver by email: {email}")
-            cursor.execute("SELECT * FROM drivers WHERE email = %s LIMIT 1", (email,))
-
+        
+        # Try to find driver by phone
+        cursor.execute("""
+            SELECT driver_id, firstName, lastName, full_name, email, phone, 
+                   password, license_no, vehicle_type, vehicle_make, 
+                   vehicle_model, license_plate, status
+            FROM drivers 
+            WHERE phone = %s
+        """, (phone,))
+        
         driver = cursor.fetchone()
         cursor.close()
         conn.close()
@@ -490,20 +496,19 @@ def driver_login():
             print("❌ No driver found")
             return jsonify({"error": "No driver found with provided credentials"}), 404
 
-        print(f"✅ Driver found: {driver.get('full_name')} (ID: {driver.get('driver_id')})")
-        print(f"Driver columns: {list(driver.keys())}")
-
-        # Get the stored password hash
-        stored_password = driver.get('password')
+        # Access driver data correctly
+        stored_password = driver.get("password") if isinstance(driver, dict) else driver[6]
         
+        print(f"✅ Driver found: ID {driver.get('driver_id') if isinstance(driver, dict) else driver[0]}")
+
         if not stored_password:
             print("❌ No password stored in database!")
             return jsonify({"error": "Account configuration error"}), 500
 
-        print(f"Stored password (first 50 chars): {stored_password[:50]}...")
+        print(f"Stored password type: {type(stored_password)}")
         
         # Verify password using werkzeug's check_password_hash
-        password_valid = check_password_hash(stored_password, password)
+        password_valid = check_password_hash(str(stored_password), str(password))
         print(f"Password verification result: {password_valid}")
 
         if not password_valid:
@@ -511,12 +516,15 @@ def driver_login():
             return jsonify({"error": "Invalid credentials"}), 401
 
         # Success! Set session
-        driver_id = driver.get("driver_id") or driver.get("id")
+        driver_id = driver.get("driver_id") if isinstance(driver, dict) else driver[0]
+        driver_first_name = driver.get("firstName") if isinstance(driver, dict) else driver[1]
+        driver_email = driver.get("email") if isinstance(driver, dict) else driver[4]
+        driver_full_name = driver.get("full_name") if isinstance(driver, dict) else driver[3]
         
         session.clear()
-        session["driver_id"] = driver_id
-        session["driver_firstName"] = driver.get("firstName") or driver.get("full_name", "").split()[0]
-        session["driver_email"] = driver.get("email") or ""
+        session["driver_id"] = int(str(driver_id))
+        session["driver_firstName"] = str(driver_first_name) if driver_first_name else (str(driver_full_name).split()[0] if " " in str(driver_full_name) else str(driver_full_name))
+        session["driver_email"] = str(driver_email) if driver_email else ""
         session["is_driver"] = True
         session.permanent = True
 
@@ -526,7 +534,7 @@ def driver_login():
             "message": "Driver login successful!",
             "redirect": "/driver/dashboard",
             "driver": {
-                "id": driver_id,
+                "id": int(str(driver_id)),
                 "firstName": session.get("driver_firstName"),
                 "email": session.get("driver_email")
             }
@@ -645,22 +653,7 @@ def driver_dashboard():
             session.clear()
             return redirect("/")
         
-        print(f"✅ Driver found: {driver.get('full_name')} (ID: {driver.get('driver_id')})")
-        
-        # Try to get rating and total_rides if columns exist
-        try:
-            cursor.execute("""
-                SELECT rating, total_rides, total_earnings
-                FROM drivers WHERE driver_id=%s
-            """, (driver_id,))
-            extra_stats = cursor.fetchone()
-            if extra_stats:
-                driver.update(extra_stats)
-        except mysql.connector.Error as e:
-            print(f"⚠️ Some driver stats columns don't exist yet: {e}")
-            driver['rating'] = 0.0
-            driver['total_rides'] = 0
-            driver['total_earnings'] = 0.0
+        print(f"✅ Driver found: ID {driver[0] if not isinstance(driver, dict) else driver.get('driver_id')}")
         
         # Get ride statistics from rides table
         try:
@@ -686,25 +679,25 @@ def driver_dashboard():
             """, (driver_id,))
             active_rides = cursor.fetchall()
         except mysql.connector.Error:
-            print("⚠️ Active rides query failed, using empty list")
+            print("⚠️ Active rides query failed")
             active_rides = []
         
         cursor.close()
         conn.close()
         
-        print("✅ Successfully rendering dashboard")
+        print("✅ Rendering dashboard")
         return render_template(
             "driver_dashboard.html", 
             driver=driver, 
-            stats=stats or {"total_rides": 0, "total_earnings": 0},
+            stats=stats or {},
             active_rides=active_rides or []
         )
-        
     except Exception as e:
         print(f"❌ Dashboard error: {e}")
         import traceback
         traceback.print_exc()
         return redirect("/")
+
 
 
 @app.route("/driver/logout", methods=["POST"])
@@ -1040,14 +1033,19 @@ def cancel_ride(ride_id):
 def get_ride_status(ride_id):
     """Get current status of a ride with driver location"""
     user_id = session.get("user_id")
+    
+    # Debug logging
+    print(f"🔍 Ride status request - User ID: {user_id}, Ride ID: {ride_id}")
+    
     if not user_id:
-        return jsonify({"error": "Not logged in"}), 401
+        print("❌ User not authenticated for ride status")
+        return jsonify({"error": "Not logged in", "redirect": "/login"}), 401
 
     try:
         conn = get_db_connection()
         cursor = conn.cursor(dictionary=True)
         
-        # Get ride details
+        # Get ride details - verify the ride belongs to this user
         cursor.execute("""
             SELECT 
                 r.ride_id,
@@ -1074,12 +1072,14 @@ def get_ride_status(ride_id):
         if not ride:
             cursor.close()
             conn.close()
-            return jsonify({"error": "Ride not found"}), 404
+            print(f"❌ Ride {ride_id} not found for user {user_id}")
+            return jsonify({"error": "Ride not found or access denied"}), 404
         
         driver = None
         
         # If ride is accepted, get driver details and location
-        if ride['driver_id']:
+        if ride.get('driver_id') if isinstance(ride, dict) else ride[2]:  # driver_id is at index 2
+            driver_id = ride.get('driver_id') if isinstance(ride, dict) else ride[2]
             cursor.execute("""
                 SELECT 
                     driver_id,
@@ -1096,13 +1096,14 @@ def get_ride_status(ride_id):
                     current_lng
                 FROM drivers
                 WHERE driver_id = %s
-            """, (ride['driver_id'],))
+            """, (driver_id,))
             
             driver = cursor.fetchone()
         
         cursor.close()
         conn.close()
         
+        print(f"✅ Ride status retrieved for ride {ride_id}")
         return jsonify({
             "ride": ride,
             "driver": driver
@@ -1112,7 +1113,7 @@ def get_ride_status(ride_id):
         print(f"❌ Get ride status error: {e}")
         import traceback
         traceback.print_exc()
-        return jsonify({"error": "Failed to get ride status"}), 500
+        return jsonify({"error": "Failed to get ride status", "details": str(e)}), 500
 
 
 # @app.route("/user/confirm_payment", methods=["POST"])
@@ -1232,8 +1233,6 @@ def confirm_payment_simple():
         import traceback; traceback.print_exc()
         return jsonify({"error": "Failed to confirm payment", "details": str(e)}), 500
 
-
-
 @app.route("/driver/update_location", methods=["POST"])
 def driver_update_location():
     """Driver updates their current location"""
@@ -1256,7 +1255,7 @@ def driver_update_location():
             UPDATE drivers
             SET current_lat = %s, current_lng = %s, last_location_update = NOW()
             WHERE driver_id = %s
-        """, (lat, lng, driver_id))
+        """, (lat, lng, int(str(driver_id))))
         
         conn.commit()
         cursor.close()
@@ -1604,13 +1603,19 @@ def driver_active_ride():
 def get_ride_updates(ride_id):
     """Get real-time updates for a specific ride"""
     user_id = session.get("user_id")
+    
+    # Debug logging
+    print(f"🔍 Ride updates request - User ID: {user_id}, Ride ID: {ride_id}")
+    
     if not user_id:
-        return jsonify({"error": "Not logged in"}), 401
+        print("❌ User not authenticated for ride updates")
+        return jsonify({"error": "Not logged in", "redirect": "/login"}), 401
 
     try:
         conn = get_db_connection()
         cursor = conn.cursor(dictionary=True)
         
+        # Verify the ride belongs to this user
         cursor.execute("""
             SELECT 
                 r.ride_id,
@@ -1639,13 +1644,15 @@ def get_ride_updates(ride_id):
         conn.close()
         
         if not ride:
-            return jsonify({"error": "Ride not found"}), 404
+            print(f"❌ Ride {ride_id} not found for user {user_id}")
+            return jsonify({"error": "Ride not found or access denied"}), 404
         
+        print(f"✅ Ride updates retrieved for ride {ride_id}")
         return jsonify({"ride": ride}), 200
         
     except Exception as e:
         print(f"❌ Get ride updates error: {e}")
-        return jsonify({"error": "Failed to get updates"}), 500
+        return jsonify({"error": "Failed to get updates", "details": str(e)}), 500
 
 
 # ==================== ENHANCED WALLET SYSTEM ====================
@@ -1691,8 +1698,10 @@ def user_wallet_history():
         cursor.close()
         conn.close()
         
+        wallet_balance = user.get("wallet_balance") if isinstance(user, dict) else user[0] if user else 0
+        
         return jsonify({
-            "wallet_balance": float(user['wallet_balance']) if user else 0,
+            "wallet_balance": float(str(wallet_balance)),
             "transactions": transactions
         }), 200
         
@@ -1743,9 +1752,12 @@ def driver_wallet_history():
         cursor.close()
         conn.close()
         
+        wallet_balance = driver.get("wallet_balance") if isinstance(driver, dict) else driver[0] if driver else 0
+        total_earnings = driver.get("total_earnings") if isinstance(driver, dict) else driver[1] if driver else 0
+        
         return jsonify({
-            "wallet_balance": float(driver['wallet_balance']) if driver else 0,
-            "total_earnings": float(driver['total_earnings']) if driver else 0,
+            "wallet_balance": float(str(wallet_balance)),
+            "total_earnings": float(str(total_earnings)),
             "transactions": transactions
         }), 200
         
@@ -1763,6 +1775,7 @@ def complete_ride_with_payment(ride_id):
     if not driver_id:
         return jsonify({"error": "Not logged in"}), 401
 
+    conn = None
     try:
         conn = get_db_connection()
         conn.start_transaction()
@@ -1783,7 +1796,10 @@ def complete_ride_with_payment(ride_id):
             conn.close()
             return jsonify({"error": "Ride not found"}), 404
         
-        if ride['status'] != 'in_progress':
+        ride_status = ride.get("status") if isinstance(ride, dict) else ride[4]
+        payment_status = ride.get("payment_status") if isinstance(ride, dict) else ride[5]
+        
+        if ride_status != 'in_progress':
             conn.rollback()
             cursor.close()
             conn.close()
@@ -1810,7 +1826,7 @@ def complete_ride_with_payment(ride_id):
         print(f"✅ Ride {ride_id} completed - waiting for payment")
         return jsonify({
             "message": "Ride completed - awaiting payment",
-            "payment_pending": ride['payment_status'] != 'paid'
+            "payment_pending": payment_status != 'paid'
         }), 200
         
     except Exception as e:
@@ -1867,8 +1883,13 @@ def user_notifications():
 def get_user_wallet_balance():
     """Get user's current wallet balance"""
     user_id = session.get("user_id")
+    
+    # Debug logging
+    print(f"🔍 Wallet balance request - User ID: {user_id}")
+    
     if not user_id:
-        return jsonify({"error": "Not logged in"}), 401
+        print("❌ User not authenticated for wallet balance")
+        return jsonify({"error": "Not logged in", "redirect": "/login"}), 401
 
     try:
         conn = get_db_connection()
@@ -1884,64 +1905,38 @@ def get_user_wallet_balance():
         conn.close()
         
         if not user:
+            print(f"❌ User {user_id} not found")
             return jsonify({"error": "User not found"}), 404
         
+        wallet_balance = user.get("wallet_balance") if isinstance(user, dict) else user[3]
+        first_name = user.get("firstName") if isinstance(user, dict) else user[1]
+        last_name = user.get("lastName") if isinstance(user, dict) else user[2]
+        
+        print(f"✅ Wallet balance retrieved for user {user_id}")
         return jsonify({
-            "wallet_balance": float(user['wallet_balance']),
-            "user_name": f"{user['firstName']} {user['lastName']}"
+            "wallet_balance": float(str(wallet_balance)),
+            "user_name": f"{first_name} {last_name}"
         }), 200
         
     except Exception as e:
         print(f"❌ Get wallet balance error: {e}")
-        return jsonify({"error": "Failed to get wallet balance"}), 500
-
-
-@app.route("/driver/wallet_balance", methods=["GET"])
-def get_driver_wallet_balance():
-    """Get driver's current wallet balance"""
-    driver_id = session.get("driver_id")
-    if not driver_id:
-        return jsonify({"error": "Not logged in"}), 401
-
-    try:
-        conn = get_db_connection()
-        cursor = conn.cursor(dictionary=True)
-        
-        cursor.execute("""
-            SELECT driver_id, full_name, wallet_balance
-            FROM drivers WHERE driver_id = %s
-        """, (driver_id,))
-        
-        driver = cursor.fetchone()
-        cursor.close()
-        conn.close()
-        
-        if not driver:
-            return jsonify({"error": "Driver not found"}), 404
-        
-        return jsonify({
-            "wallet_balance": float(driver['wallet_balance']),
-            "driver_name": driver['full_name']
-        }), 200
-        
-    except Exception as e:
-        print(f"❌ Get driver wallet balance error: {e}")
-        return jsonify({"error": "Failed to get wallet balance"}), 500
+        return jsonify({"error": "Failed to get wallet balance", "details": str(e)}), 500
 
 
 @app.route("/user/confirm_payment", methods=["POST"])
-def confirm_payment():
-    """User confirms wallet payment - transfers money from user to driver"""
+def confirm_user_payment():
+    """User confirms payment for a completed ride"""
     user_id = session.get("user_id")
     if not user_id:
         return jsonify({"error": "Not logged in"}), 401
 
-    data = request.get_json() or {}
+    data = request.get_json()
     ride_id = data.get("ride_id")
     
     if not ride_id:
-        return jsonify({"error": "ride_id required"}), 400
+        return jsonify({"error": "Ride ID required"}), 400
 
+    conn = None
     try:
         conn = get_db_connection()
         conn.start_transaction()
@@ -1954,9 +1949,8 @@ def confirm_payment():
                    d.wallet_balance as driver_wallet
             FROM rides r
             JOIN users u ON r.user_id = u.id
-            LEFT JOIN drivers d ON r.driver_id = d.driver_id
+            JOIN drivers d ON r.driver_id = d.driver_id
             WHERE r.ride_id = %s AND r.user_id = %s
-            FOR UPDATE
         """, (ride_id, user_id))
         
         ride = cursor.fetchone()
@@ -1966,51 +1960,49 @@ def confirm_payment():
             cursor.close()
             conn.close()
             return jsonify({"error": "Ride not found"}), 404
-        
-        if ride['payment_status'] == 'paid':
+            
+        # Check if already paid
+        payment_status = ride.get("payment_status") if isinstance(ride, dict) else ride[5]
+        if payment_status == 'paid':
             conn.rollback()
             cursor.close()
             conn.close()
-            return jsonify({"error": "Payment already completed"}), 400
-        
-        if not ride['driver_id']:
+            return jsonify({"error": "Ride already paid"}), 400
+            
+        # Check if ride is completed
+        ride_status = ride.get("status") if isinstance(ride, dict) else ride[4]
+        if ride_status != 'completed':
             conn.rollback()
             cursor.close()
             conn.close()
-            return jsonify({"error": "No driver assigned to this ride"}), 400
-        
-        fare = float(ride['fare'])
-        user_wallet = float(ride['user_wallet'])
-        driver_wallet = float(ride['driver_wallet'])
+            return jsonify({"error": "Ride not completed yet"}), 400
+            
+        fare = ride.get("fare") if isinstance(ride, dict) else ride[3]
+        user_wallet = ride.get("user_wallet") if isinstance(ride, dict) else ride[6]
+        driver_wallet = ride.get("driver_wallet") if isinstance(ride, dict) else ride[7]
+        driver_id = ride.get("driver_id") if isinstance(ride, dict) else ride[2]
         
         # Check if user has sufficient balance
-        if user_wallet < fare:
+        if float(str(user_wallet)) < float(str(fare)):
             conn.rollback()
             cursor.close()
             conn.close()
-            return jsonify({
-                "error": "Insufficient wallet balance",
-                "required": fare,
-                "available": user_wallet
-            }), 400
+            return jsonify({"error": "Insufficient wallet balance"}), 400
+            
+        # Process payment
+        new_user_balance = float(str(user_wallet)) - float(str(fare))
+        new_driver_balance = float(str(driver_wallet)) + float(str(fare))
         
-        # Calculate new balances
-        new_user_balance = user_wallet - fare
-        new_driver_balance = driver_wallet + fare
-        
-        # Deduct from user wallet
+        # Update user wallet
         cursor.execute("""
-            UPDATE users
-            SET wallet_balance = %s
-            WHERE id = %s
+            UPDATE users SET wallet_balance = %s WHERE id = %s
         """, (new_user_balance, user_id))
         
-        # Add to driver wallet
+        # Update driver wallet
         cursor.execute("""
-            UPDATE drivers
-            SET wallet_balance = %s, total_earnings = total_earnings + %s
+            UPDATE drivers SET wallet_balance = %s, total_earnings = total_earnings + %s 
             WHERE driver_id = %s
-        """, (new_driver_balance, fare, ride['driver_id']))
+        """, (new_driver_balance, fare, driver_id))
         
         # Update ride payment status
         cursor.execute("""
@@ -2025,7 +2017,7 @@ def confirm_payment():
             INSERT INTO wallet_transactions 
             (user_id, ride_id, transaction_type, amount, balance_before, balance_after, description)
             VALUES (%s, %s, 'ride_payment', %s, %s, %s, %s)
-        """, (user_id, ride_id, -fare, user_wallet, new_user_balance, 
+        """, (user_id, ride_id, -float(str(fare)), float(str(user_wallet)), new_user_balance, 
               f"Payment for Ride #{ride_id}"))
         
         # Record transaction for driver (credit)
@@ -2033,20 +2025,20 @@ def confirm_payment():
             INSERT INTO wallet_transactions 
             (driver_id, ride_id, transaction_type, amount, balance_before, balance_after, description)
             VALUES (%s, %s, 'ride_payment', %s, %s, %s, %s)
-        """, (ride['driver_id'], ride_id, fare, driver_wallet, new_driver_balance,
+        """, (driver_id, ride_id, float(str(fare)), float(str(driver_wallet)), new_driver_balance,
               f"Received payment for Ride #{ride_id}"))
         
         conn.commit()
         cursor.close()
         conn.close()
         
-        print(f"✅ Payment successful: User {user_id} paid ₹{fare} to Driver {ride['driver_id']}")
+        print(f"✅ Payment successful: User {user_id} paid ₹{fare} to Driver {driver_id}")
         print(f"   User balance: ₹{user_wallet} → ₹{new_user_balance}")
         print(f"   Driver balance: ₹{driver_wallet} → ₹{new_driver_balance}")
         
         return jsonify({
             "message": "Payment successful",
-            "fare": fare,
+            "fare": float(str(fare)),
             "user_new_balance": new_user_balance,
             "driver_new_balance": new_driver_balance,
             "transaction_completed": True
@@ -2138,18 +2130,19 @@ def get_driver_wallet_transactions():
 
 
 @app.route("/user/add_money", methods=["POST"])
-def add_money_to_wallet():
-    """Add money to user wallet (for testing/top-up)"""
+def user_add_money_to_wallet():
+    """Add money to user's wallet"""
     user_id = session.get("user_id")
     if not user_id:
         return jsonify({"error": "Not logged in"}), 401
 
-    data = request.get_json() or {}
+    data = request.get_json()
     amount = data.get("amount")
     
-    if not amount or amount <= 0:
+    if not amount or float(amount) <= 0:
         return jsonify({"error": "Invalid amount"}), 400
 
+    conn = None
     try:
         conn = get_db_connection()
         conn.start_transaction()
@@ -2161,7 +2154,14 @@ def add_money_to_wallet():
         """, (user_id,))
         
         user = cursor.fetchone()
-        old_balance = float(user['wallet_balance'])
+        if not user:
+            conn.rollback()
+            cursor.close()
+            conn.close()
+            return jsonify({"error": "User not found"}), 404
+            
+        wallet_balance = user.get("wallet_balance") if isinstance(user, dict) else user[0]
+        old_balance = float(str(wallet_balance))
         new_balance = old_balance + float(amount)
         
         # Update balance
@@ -2190,7 +2190,7 @@ def add_money_to_wallet():
         if conn:
             conn.rollback()
         print(f"❌ Add money error: {e}")
-        return jsonify({"error": "Failed to add money"}), 500        
+        return jsonify({"error": "Failed to add money"}), 500
 
 # ==================== TEST ROUTES ====================
 @app.route("/test_session")
@@ -2206,121 +2206,3 @@ if __name__ == "__main__":
     print("Registered routes:")
     print(app.url_map)
     app.run(debug=True)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    
-  /* ---------- Phone input live validation ---------- */
-// Driver phone validation: digits-only, red when user enters non-digit, validate 10 digits on blur
-function initDriverPhoneValidation() {
-  const phoneInput = document.getElementById('driver_phone');
-  const phoneError = document.getElementById('driverPhoneError');
-
-  if (!phoneInput) return;
-
-  // helper to show/hide error and set border class
-  function setValidState(isValid, showMsg) {
-    phoneInput.classList.remove('input-valid', 'input-invalid');
-    if (isValid) {
-      phoneInput.classList.add('input-valid');
-      if (phoneError) phoneError.style.display = 'none';
-    } else {
-      phoneInput.classList.add('input-invalid');
-      if (phoneError) phoneError.style.display = showMsg ? 'inline' : 'none';
-    }
-  }
-
-  // On input: remove non-digits automatically, but show red briefly if user typed invalid chars
-  phoneInput.addEventListener('input', (e) => {
-    const raw = phoneInput.value;
-    const cleaned = raw.replace(/\D/g, ''); // remove anything that's not digit
-
-    // If user typed non-digit, show error & red border
-    if (cleaned !== raw) {
-      // keep only digits in the input
-      phoneInput.value = cleaned;
-      // show error immediately
-      setValidState(false, true);
-      // optional: remove the error after a short delay if user continues valid typing
-      clearTimeout(phoneInput._drvErrTimeout);
-      phoneInput._drvErrTimeout = setTimeout(() => {
-        // if still invalid length, keep red; otherwise mark green
-        const okLen = cleaned.length === 10;
-        setValidState(okLen, !okLen);
-      }, 900);
-      return;
-    }
-
-    // If only digits now, mark green if length OK, otherwise show red (not as severe)
-    const okLen = cleaned.length === 10;
-    if (okLen) {
-      setValidState(true, false);
-    } else {
-      // less than 10 digits — show red but less intrusive (error message optional)
-      setValidState(false, true);
-    }
-  });
-
-  // Prevent paste of non-digit characters (cleans pasted text)
-  phoneInput.addEventListener('paste', (e) => {
-    e.preventDefault();
-    const text = (e.clipboardData || window.clipboardData).getData('text') || '';
-    const digits = text.replace(/\D/g, '').slice(0, 10);
-    phoneInput.value = (phoneInput.value + digits).slice(0, 10);
-    // trigger input event logic manually
-    phoneInput.dispatchEvent(new Event('input', { bubbles: true }));
-  });
-
-  // on blur: final validation for exactly 10 digits
-  phoneInput.addEventListener('blur', () => {
-    const value = phoneInput.value.trim();
-    if (!/^\d{10}$/.test(value)) {
-      setValidState(false, true);
-    } else {
-      setValidState(true, false);
-    }
-  });
-
-  // initialize state
-  const initial = phoneInput.value.replace(/\D/g, '');
-  phoneInput.value = initial;
-  if (initial.length === 10) setValidState(true, false);
-  else setValidState(false, initial.length > 0);
-}
-
-// call this in your DOMContentLoaded along with other init functions
-document.addEventListener('DOMContentLoaded', function () {
-  // ... your existing init calls ...
-  initDriverPhoneValidation();
-});

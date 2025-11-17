@@ -1073,7 +1073,6 @@ def get_user_wallet_balance():
         traceback.print_exc()
         return jsonify({"error": "Failed to get wallet balance", "details": str(e)}), 500
 
-
 @app.route("/driver/wallet_balance", methods=["GET"])
 def get_driver_wallet_balance():
     """Get driver's current wallet balance"""
@@ -1106,7 +1105,6 @@ def get_driver_wallet_balance():
         print(f"❌ Get driver wallet balance error: {e}")
         return jsonify({"error": "Failed to get wallet balance"}), 500
 
-
 @app.route("/user/confirm_payment", methods=["POST"])
 def confirm_payment():
     """User confirms wallet payment - transfers money from user to driver"""
@@ -1126,8 +1124,6 @@ def confirm_payment():
         return jsonify({"error": "ride_id required"}), 400
 
     conn = None
-    cursor = None
-    
     try:
         conn = get_db_connection()
         conn.start_transaction()
@@ -1137,9 +1133,7 @@ def confirm_payment():
         cursor.execute("""
             SELECT r.ride_id, r.user_id, r.driver_id, r.fare, r.status, r.payment_status,
                    u.wallet_balance as user_wallet,
-                   d.wallet_balance as driver_wallet,
-                   u.firstName, u.lastName,
-                   d.full_name as driver_name
+                   d.wallet_balance as driver_wallet
             FROM rides r
             JOIN users u ON r.user_id = u.user_id
             LEFT JOIN drivers d ON r.driver_id = d.driver_id
@@ -1149,20 +1143,24 @@ def confirm_payment():
         
         ride = cursor.fetchone()
         
-        # Validation checks
         if not ride:
             conn.rollback()
+            cursor.close()
+            conn.close()
             return jsonify({"error": "Ride not found"}), 404
         
         if ride['payment_status'] == 'paid':
             conn.rollback()
+            cursor.close()
+            conn.close()
             return jsonify({"error": "Payment already completed"}), 400
         
         if not ride['driver_id']:
             conn.rollback()
+            cursor.close()
+            conn.close()
             return jsonify({"error": "No driver assigned to this ride"}), 400
         
-        # Convert to float for calculations
         fare = float(ride['fare'])
         user_wallet = float(ride['user_wallet'])
         driver_wallet = float(ride['driver_wallet'])
@@ -1175,37 +1173,33 @@ def confirm_payment():
         # Check if user has sufficient balance
         if user_wallet < fare:
             conn.rollback()
+            cursor.close()
+            conn.close()
             return jsonify({
                 "error": "Insufficient wallet balance",
                 "required": fare,
-                "available": user_wallet,
-                "shortage": fare - user_wallet
+                "available": user_wallet
             }), 400
         
         # Calculate new balances
         new_user_balance = user_wallet - fare
         new_driver_balance = driver_wallet + fare
         
-        # 1. Deduct from user wallet
+        # Deduct from user wallet
         cursor.execute("""
             UPDATE users
             SET wallet_balance = %s
             WHERE user_id = %s
         """, (new_user_balance, user_id))
         
-        print(f"✅ User wallet updated: ₹{user_wallet} → ₹{new_user_balance}")
-        
-        # 2. Add to driver wallet and earnings
+        # Add to driver wallet
         cursor.execute("""
             UPDATE drivers
-            SET wallet_balance = %s, 
-                total_earnings = total_earnings + %s
+            SET wallet_balance = %s, total_earnings = total_earnings + %s
             WHERE driver_id = %s
         """, (new_driver_balance, fare, ride['driver_id']))
         
-        print(f"✅ Driver wallet updated: ₹{driver_wallet} → ₹{new_driver_balance}")
-        
-        # 3. Update ride payment status
+        # Update ride payment status
         cursor.execute("""
             UPDATE rides
             SET payment_method = 'wallet', 
@@ -1213,57 +1207,36 @@ def confirm_payment():
             WHERE ride_id = %s
         """, (ride_id,))
         
-        print(f"✅ Ride #{ride_id} marked as paid")
-        
-        # 4. Record transaction for USER (debit) - FIXED: Added driver_id
+        # Record transaction for user (debit)
         cursor.execute("""
             INSERT INTO wallet_transactions 
-            (user_id, driver_id, ride_id, transaction_type, amount, balance_before, balance_after, description)
-            VALUES (%s, %s, %s, 'ride_payment', %s, %s, %s, %s)
-        """, (
-            user_id, 
-            ride['driver_id'],  # ✅ FIXED: Added driver_id link
-            ride_id, 
-            fare,  # ✅ FIXED: Positive amount (debit is implied by transaction_type)
-            user_wallet, 
-            new_user_balance, 
-            f"Payment for Ride #{ride_id} to {ride['driver_name']}"
-        ))
+            (user_id, ride_id, transaction_type, amount, balance_before, balance_after, description)
+            VALUES (%s, %s, 'ride_payment', %s, %s, %s, %s)
+        """, (user_id, ride_id, -fare, user_wallet, new_user_balance, 
+              f"Payment for Ride #{ride_id}"))
         
-        print(f"✅ User transaction recorded")
-        
-        # 5. Record transaction for DRIVER (credit) - FIXED: Added user_id
+        # Record transaction for driver (credit)
         cursor.execute("""
             INSERT INTO wallet_transactions 
-            (driver_id, user_id, ride_id, transaction_type, amount, balance_before, balance_after, description)
-            VALUES (%s, %s, %s, 'ride_payment', %s, %s, %s, %s)
-        """, (
-            ride['driver_id'],
-            user_id,  # ✅ FIXED: Added user_id link
-            ride_id, 
-            fare, 
-            driver_wallet, 
-            new_driver_balance,
-            f"Payment received for Ride #{ride_id} from {ride['firstName']} {ride['lastName']}"
-        ))
+            (driver_id, ride_id, transaction_type, amount, balance_before, balance_after, description)
+            VALUES (%s, %s, 'ride_payment', %s, %s, %s, %s)
+        """, (ride['driver_id'], ride_id, fare, driver_wallet, new_driver_balance,
+              f"Received payment for Ride #{ride_id}"))
         
-        print(f"✅ Driver transaction recorded")
-        
-        # Commit all changes
         conn.commit()
+        cursor.close()
+        conn.close()
         
         print(f"✅ Payment successful: User {user_id} paid ₹{fare} to Driver {ride['driver_id']}")
         print(f"   User balance: ₹{user_wallet} → ₹{new_user_balance}")
         print(f"   Driver balance: ₹{driver_wallet} → ₹{new_driver_balance}")
         
         return jsonify({
-            "success": True,
             "message": "Payment successful",
             "fare": fare,
             "user_new_balance": new_user_balance,
             "driver_new_balance": new_driver_balance,
-            "transaction_completed": True,
-            "ride_id": ride_id
+            "transaction_completed": True
         }), 200
         
     except Exception as e:
@@ -1272,18 +1245,7 @@ def confirm_payment():
         print(f"❌ Payment error: {e}")
         import traceback
         traceback.print_exc()
-        return jsonify({
-            "success": False,
-            "error": "Payment failed", 
-            "details": str(e)
-        }), 500
-        
-    finally:
-        if cursor:
-            cursor.close()
-        if conn:
-            conn.close()
-
+        return jsonify({"error": "Payment failed", "details": str(e)}), 500
 
 @app.route("/user/add_money", methods=["POST"])
 def add_money_to_wallet():
@@ -1295,12 +1257,9 @@ def add_money_to_wallet():
     data = request.get_json() or {}
     amount = data.get("amount")
     
-    if not amount or float(amount) <= 0:
-        return jsonify({"error": "Invalid amount. Must be greater than 0"}), 400
+    if not amount or amount <= 0:
+        return jsonify({"error": "Invalid amount"}), 400
 
-    conn = None
-    cursor = None
-    
     try:
         conn = get_db_connection()
         conn.start_transaction()
@@ -1308,18 +1267,12 @@ def add_money_to_wallet():
         
         # Get current balance
         cursor.execute("""
-            SELECT wallet_balance, firstName, lastName FROM users WHERE user_id = %s FOR UPDATE
+            SELECT wallet_balance FROM users WHERE user_id = %s FOR UPDATE
         """, (user_id,))
         
         user = cursor.fetchone()
-        
-        if not user:
-            conn.rollback()
-            return jsonify({"error": "User not found"}), 404
-        
         old_balance = float(user['wallet_balance'])
-        amount = float(amount)
-        new_balance = old_balance + amount
+        new_balance = old_balance + float(amount)
         
         # Update balance
         cursor.execute("""
@@ -1330,19 +1283,16 @@ def add_money_to_wallet():
         cursor.execute("""
             INSERT INTO wallet_transactions 
             (user_id, transaction_type, amount, balance_before, balance_after, description)
-            VALUES (%s, 'deposit', %s, %s, %s, %s)
-        """, (user_id, amount, old_balance, new_balance, f"Added ₹{amount} to wallet"))
+            VALUES (%s, 'deposit', %s, %s, %s, 'Money added to wallet')
+        """, (user_id, amount, old_balance, new_balance))
         
         conn.commit()
+        cursor.close()
+        conn.close()
         
-        print(f"✅ User {user_id} ({user['firstName']} {user['lastName']}) added ₹{amount} to wallet")
-        print(f"   Balance: ₹{old_balance} → ₹{new_balance}")
-        
+        print(f"✅ User {user_id} added ₹{amount} to wallet")
         return jsonify({
-            "success": True,
             "message": "Money added successfully",
-            "amount_added": amount,
-            "old_balance": old_balance,
             "new_balance": new_balance
         }), 200
         
@@ -1350,119 +1300,7 @@ def add_money_to_wallet():
         if conn:
             conn.rollback()
         print(f"❌ Add money error: {e}")
-        import traceback
-        traceback.print_exc()
-        return jsonify({"error": "Failed to add money", "details": str(e)}), 500
-        
-    finally:
-        if cursor:
-            cursor.close()
-        if conn:
-            conn.close()
-
-
-# ✅ BONUS: Get transaction history
-@app.route("/user/transaction_history", methods=["GET"])
-def get_user_transaction_history():
-    """Get user's wallet transaction history"""
-    user_id = session.get("user_id")
-    if not user_id:
-        return jsonify({"error": "Not logged in"}), 401
-
-    try:
-        conn = get_db_connection()
-        cursor = conn.cursor(dictionary=True)
-        
-        cursor.execute("""
-            SELECT 
-                wt.transaction_id,
-                wt.transaction_type,
-                wt.amount,
-                wt.balance_before,
-                wt.balance_after,
-                wt.description,
-                wt.created_at,
-                wt.ride_id,
-                d.full_name as driver_name
-            FROM wallet_transactions wt
-            LEFT JOIN drivers d ON wt.driver_id = d.driver_id
-            WHERE wt.user_id = %s
-            ORDER BY wt.created_at DESC
-            LIMIT 50
-        """, (user_id,))
-        
-        transactions = cursor.fetchall()
-        cursor.close()
-        conn.close()
-        
-        # Convert Decimal and datetime to JSON serializable format
-        for txn in transactions:
-            txn['amount'] = float(txn['amount'])
-            txn['balance_before'] = float(txn['balance_before'])
-            txn['balance_after'] = float(txn['balance_after'])
-            txn['created_at'] = txn['created_at'].isoformat() if txn['created_at'] else None
-        
-        return jsonify({
-            "transactions": transactions,
-            "count": len(transactions)
-        }), 200
-        
-    except Exception as e:
-        print(f"❌ Get transaction history error: {e}")
-        return jsonify({"error": "Failed to get transaction history"}), 500
-
-
-@app.route("/driver/transaction_history", methods=["GET"])
-def get_driver_transaction_history():
-    """Get driver's wallet transaction history"""
-    driver_id = session.get("driver_id")
-    if not driver_id:
-        return jsonify({"error": "Not logged in"}), 401
-
-    try:
-        conn = get_db_connection()
-        cursor = conn.cursor(dictionary=True)
-        
-        cursor.execute("""
-            SELECT 
-                wt.transaction_id,
-                wt.transaction_type,
-                wt.amount,
-                wt.balance_before,
-                wt.balance_after,
-                wt.description,
-                wt.created_at,
-                wt.ride_id,
-                u.firstName,
-                u.lastName
-            FROM wallet_transactions wt
-            LEFT JOIN users u ON wt.user_id = u.user_id
-            WHERE wt.driver_id = %s
-            ORDER BY wt.created_at DESC
-            LIMIT 50
-        """, (driver_id,))
-        
-        transactions = cursor.fetchall()
-        cursor.close()
-        conn.close()
-        
-        # Convert Decimal and datetime to JSON serializable format
-        for txn in transactions:
-            txn['amount'] = float(txn['amount'])
-            txn['balance_before'] = float(txn['balance_before'])
-            txn['balance_after'] = float(txn['balance_after'])
-            txn['created_at'] = txn['created_at'].isoformat() if txn['created_at'] else None
-            if txn.get('firstName') and txn.get('lastName'):
-                txn['user_name'] = f"{txn['firstName']} {txn['lastName']}"
-        
-        return jsonify({
-            "transactions": transactions,
-            "count": len(transactions)
-        }), 200
-        
-    except Exception as e:
-        print(f"❌ Get driver transaction history error: {e}")
-        return jsonify({"error": "Failed to get transaction history"}), 500
+        return jsonify({"error": "Failed to add money"}), 500
 
 # ==================== DEBUG ENDPOINTS ====================
 @app.route("/debug/session", methods=["GET"])
@@ -1500,42 +1338,3 @@ if __name__ == "__main__":
     print("=" * 60 + "\n")
     
     app.run(debug=True, port=5000)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
