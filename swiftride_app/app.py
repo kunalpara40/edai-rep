@@ -693,11 +693,273 @@ def user_my_rides():
         print(f"❌ Get user rides error: {e}")
         return jsonify({"error": "Failed to fetch rides"}), 500
 
+# @app.route("/user/cancel_ride/<int:ride_id>", methods=["POST"])
+# def cancel_ride_with_notification(ride_id):
+#     """Enhanced: Cancel ride with driver notification"""
+#     user_id = session.get("user_id")
+#     if not user_id:
+#         return jsonify({"error": "Not logged in"}), 401
+
+#     conn = None
+#     cursor = None
+    
+#     try:
+#         conn = get_db_connection()
+#         conn.start_transaction()
+#         cursor = conn.cursor(dictionary=True)
+        
+ 
+#         cursor.execute("""
+#             SELECT r.ride_id, r.user_id, r.driver_id, r.status, r.payment_status, 
+#                    r.fare, r.payment_method,
+#                    u.wallet_balance as user_wallet,
+#                    d.wallet_balance as driver_wallet,
+#                    u.firstName, u.lastName,
+#                    d.full_name as driver_name
+#             FROM rides r
+#             JOIN users u ON r.user_id = u.user_id
+#             LEFT JOIN drivers d ON r.driver_id = d.driver_id
+#             WHERE r.ride_id = %s AND r.user_id = %s
+#             FOR UPDATE
+#         """, (ride_id, user_id))
+        
+#         ride = cursor.fetchone()
+        
+#         if not ride:
+#             conn.rollback()
+#             return jsonify({"error": "Ride not found"}), 404
+        
+#         if ride['status'] not in ['requested', 'accepted', 'in_progress']:
+#             conn.rollback()
+#             return jsonify({"error": "Cannot cancel this ride - it's already completed or cancelled"}), 400
+        
+#         refund_amount = 0
+#         refund_processed = False
+      
+#         if ride['payment_status'] == 'paid' and ride['payment_method'] == 'wallet':
+#             fare = float(ride['fare'])
+#             user_wallet = float(ride['user_wallet'])
+#             driver_wallet = float(ride['driver_wallet'])
+            
+#             new_user_balance = user_wallet + fare
+#             new_driver_balance = driver_wallet - fare
+            
+        
+#             cursor.execute("""
+#                 UPDATE users
+#                 SET wallet_balance = %s
+#                 WHERE user_id = %s
+#             """, (new_user_balance, user_id))
+            
+          
+#             if ride['driver_id']:
+#                 cursor.execute("""
+#                     UPDATE drivers
+#                     SET wallet_balance = %s,
+#                         total_earnings = total_earnings - %s
+#                     WHERE driver_id = %s
+#                 """, (new_driver_balance, fare, ride['driver_id']))
+            
+          
+#             cursor.execute("""
+#                 INSERT INTO wallet_transactions 
+#                 (user_id, driver_id, ride_id, transaction_type, amount, 
+#                  balance_before, balance_after, description)
+#                 VALUES (%s, %s, %s, 'refund', %s, %s, %s, %s)
+#             """, (
+#                 user_id,
+#                 ride['driver_id'],
+#                 ride_id,
+#                 fare,
+#                 user_wallet,
+#                 new_user_balance,
+#                 f"Refund for cancelled Ride #{ride_id}"
+#             ))
+            
+#             if ride['driver_id']:
+#                 cursor.execute("""
+#                     INSERT INTO wallet_transactions 
+#                     (driver_id, user_id, ride_id, transaction_type, amount, 
+#                      balance_before, balance_after, description)
+#                     VALUES (%s, %s, %s, 'refund', %s, %s, %s, %s)
+#                 """, (
+#                     ride['driver_id'],
+#                     user_id,
+#                     ride_id,
+#                     -fare,
+#                     driver_wallet,
+#                     new_driver_balance,
+#                     f"Refund processed for cancelled Ride #{ride_id} by {ride['firstName']} {ride['lastName']}"
+#                 ))
+            
+#             refund_amount = fare
+#             refund_processed = True
+        
+      
+#         cursor.execute("""
+#             UPDATE rides
+#             SET status = 'cancelled', 
+#                 completed_at = NOW(),
+#                 payment_status = CASE 
+#                     WHEN payment_status = 'paid' THEN 'refunded'
+#                     ELSE payment_status
+#                 END,
+#                 cancellation_reason = 'Cancelled by user'
+#             WHERE ride_id = %s
+#         """, (ride_id,))
+        
+       
+#         if ride['driver_id']:
+#             cursor.execute("""
+#                 INSERT INTO driver_notifications 
+#                 (driver_id, ride_id, notification_type, message, created_at, is_read)
+#                 VALUES (%s, %s, 'ride_cancelled', %s, NOW(), 0)
+#             """, (
+#                 ride['driver_id'],
+#                 ride_id,
+#                 f"Ride #{ride_id} was cancelled by {ride['firstName']} {ride['lastName']}"
+#             ))
+            
+           
+#             cursor.execute("""
+#                 UPDATE drivers
+#                 SET status = 'available'
+#                 WHERE driver_id = %s
+#             """, (ride['driver_id'],))
+        
+#         conn.commit()
+        
+#         response_message = "Ride cancelled successfully"
+#         if refund_processed:
+#             response_message += f" and ₹{refund_amount} refunded to your wallet"
+        
+#         return jsonify({
+#             "success": True,
+#             "message": response_message,
+#             "refund_processed": refund_processed,
+#             "refund_amount": refund_amount
+#         }), 200
+        
+#     except Exception as e:
+#         if conn:
+#             conn.rollback()
+#         print(f"❌ Cancel ride error: {e}")
+#         import traceback
+#         traceback.print_exc()
+#         return jsonify({"error": "Failed to cancel ride", "details": str(e)}), 500
+        
+#     finally:
+#         if cursor:
+#             cursor.close()
+#         if conn:
+#             conn.close()
+
 @app.route("/user/cancel_ride/<int:ride_id>", methods=["POST"])
-def cancel_ride(ride_id):
-    """User cancels a ride request"""
+def cancel_ride_with_reason(ride_id):
+    """User cancels ride with reason - FIXED VERSION"""
     user_id = session.get("user_id")
+    
     if not user_id:
+        return jsonify({"error": "Not logged in"}), 401
+
+    data = request.get_json() or {}
+    cancellation_reason = data.get("reason", "No reason provided")
+
+    conn = None
+    cursor = None
+
+    try:
+        conn = get_db_connection()
+        conn.start_transaction()
+        cursor = conn.cursor(dictionary=True)
+
+        # ✅ First, verify the ride exists and belongs to this user
+        cursor.execute("""
+            SELECT ride_id, user_id, driver_id, status
+            FROM rides
+            WHERE ride_id = %s AND user_id = %s
+            FOR UPDATE
+        """, (ride_id, user_id))
+
+        ride = cursor.fetchone()
+
+        if not ride:
+            conn.rollback()
+            return jsonify({"error": "Ride not found"}), 404
+
+        # ✅ Check if ride can be cancelled
+        if ride['status'] in ['completed', 'cancelled']:
+            conn.rollback()
+            return jsonify({"error": "Cannot cancel this ride - it's already completed or cancelled"}), 400
+
+        # ✅ Update ride status - using only columns that exist
+        cursor.execute("""
+            UPDATE rides
+            SET status = 'cancelled',
+                completed_at = NOW()
+            WHERE ride_id = %s
+        """, (ride_id,))
+
+        print(f"✅ Ride {ride_id} status updated to cancelled")
+
+        # ✅ Store cancellation reason in driver notifications
+        if ride["driver_id"]:
+            cursor.execute("""
+                INSERT INTO driver_notifications 
+                (driver_id, ride_id, notification_type, message, cancellation_reason, created_at, is_read)
+                VALUES (%s, %s, 'ride_cancelled', %s, %s, NOW(), 0)
+            """, (
+                ride["driver_id"],
+                ride_id,
+                f"Ride #{ride_id} was cancelled by the user",
+                cancellation_reason
+            ))
+            
+            print(f"✅ Notification sent to driver {ride['driver_id']}")
+
+            # ✅ Set driver back to available
+            cursor.execute("""
+                UPDATE drivers
+                SET status = 'available'
+                WHERE driver_id = %s
+            """, (ride["driver_id"],))
+            
+            print(f"✅ Driver {ride['driver_id']} status updated to available")
+
+        conn.commit()
+        print(f"✅ All changes committed for ride {ride_id}")
+
+        return jsonify({
+            "success": True,
+            "message": "Ride cancelled successfully",
+            "refund_processed": False,
+            "refund_amount": 0
+        }), 200
+
+    except mysql.connector.Error as db_error:
+        if conn:
+            conn.rollback()
+        print(f"❌ Database error: {db_error}")
+        return jsonify({"error": f"Database error: {str(db_error)}"}), 500
+
+    except Exception as e:
+        if conn:
+            conn.rollback()
+        print(f"❌ Unexpected error: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": f"Failed to cancel ride: {str(e)}"}), 500
+
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
+@app.route("/driver/acknowledge_cancellation/<int:notification_id>", methods=["POST"])
+def acknowledge_cancellation(notification_id):
+    """Driver acknowledges/ticks the cancellation notification"""
+    driver_id = session.get("driver_id")
+    if not driver_id:
         return jsonify({"error": "Not logged in"}), 401
 
     try:
@@ -705,28 +967,20 @@ def cancel_ride(ride_id):
         cursor = conn.cursor()
         
         cursor.execute("""
-            UPDATE rides
-            SET status='cancelled', completed_at=NOW()
-            WHERE ride_id=%s AND user_id=%s AND status IN ('requested', 'accepted')
-        """, (ride_id, user_id))
-        
-        if cursor.rowcount == 0:
-            conn.rollback()
-            cursor.close()
-            conn.close()
-            return jsonify({"error": "Cannot cancel this ride"}), 400
+            UPDATE driver_notifications
+            SET is_acknowledged = 1, is_read = 1
+            WHERE notification_id = %s AND driver_id = %s
+        """, (notification_id, driver_id))
         
         conn.commit()
         cursor.close()
         conn.close()
         
-        print(f"✅ User {user_id} cancelled ride {ride_id}")
-        return jsonify({"message": "Ride cancelled successfully"}), 200
+        return jsonify({"success": True, "message": "Notification acknowledged"}), 200
         
     except Exception as e:
-        print(f"❌ Cancel ride error: {e}")
-        return jsonify({"error": "Failed to cancel ride"}), 500
-
+        print(f"❌ Acknowledge cancellation error: {e}")
+        return jsonify({"error": "Failed to acknowledge notification"}), 500            
 @app.route("/user/ride_status/<int:ride_id>", methods=["GET"])
 def get_ride_status(ride_id):
     """Get current status of a ride with driver location"""
@@ -945,6 +1199,170 @@ def driver_start_ride(ride_id):
         print(f"❌ Start ride error: {e}")
         return jsonify({"error": "Failed to start ride"}), 500
 
+@app.route("/driver/recent_payments", methods=["GET"])
+def driver_recent_payments():
+    """Get driver's recent payment notifications"""
+    driver_id = session.get("driver_id")
+    if not driver_id:
+        return jsonify({"error": "Not logged in"}), 401
+
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        
+        # Get recent payments received
+        cursor.execute("""
+            SELECT 
+                wt.transaction_id,
+                wt.amount,
+                wt.created_at,
+                wt.description,
+                wt.ride_id,
+                u.firstName,
+                u.lastName,
+                r.pickup_address,
+                r.dropoff_address
+            FROM wallet_transactions wt
+            LEFT JOIN users u ON wt.user_id = u.user_id
+            LEFT JOIN rides r ON wt.ride_id = r.ride_id
+            WHERE wt.driver_id = %s 
+            AND wt.transaction_type = 'ride_payment'
+            AND wt.created_at >= DATE_SUB(NOW(), INTERVAL 24 HOUR)
+            ORDER BY wt.created_at DESC
+            LIMIT 10
+        """, (driver_id,))
+        
+        payments = cursor.fetchall()
+        cursor.close()
+        conn.close()
+        
+        # Convert to JSON serializable format
+        for payment in payments:
+            payment['amount'] = float(payment['amount'])
+            payment['created_at'] = payment['created_at'].isoformat() if payment['created_at'] else None
+            payment['user_name'] = f"{payment['firstName']} {payment['lastName']}" if payment['firstName'] else 'Unknown'
+        
+        return jsonify({
+            "payments": payments,
+            "count": len(payments)
+        }), 200
+        
+    except Exception as e:
+        print(f"❌ Get recent payments error: {e}")
+        return jsonify({"error": "Failed to fetch payments"}), 500
+
+
+@app.route("/driver/earnings_summary", methods=["GET"])
+def driver_earnings_summary():
+    """Get driver's earnings summary"""
+    driver_id = session.get("driver_id")
+    if not driver_id:
+        return jsonify({"error": "Not logged in"}), 401
+
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        
+        # Get today's earnings
+        cursor.execute("""
+            SELECT COALESCE(SUM(amount), 0) as today_earnings
+            FROM wallet_transactions
+            WHERE driver_id = %s 
+            AND transaction_type = 'ride_payment'
+            AND DATE(created_at) = CURDATE()
+        """, (driver_id,))
+        today = cursor.fetchone()
+        
+        # Get this week's earnings
+        cursor.execute("""
+            SELECT COALESCE(SUM(amount), 0) as week_earnings
+            FROM wallet_transactions
+            WHERE driver_id = %s 
+            AND transaction_type = 'ride_payment'
+            AND YEARWEEK(created_at) = YEARWEEK(NOW())
+        """, (driver_id,))
+        week = cursor.fetchone()
+        
+        # Get this month's earnings
+        cursor.execute("""
+            SELECT COALESCE(SUM(amount), 0) as month_earnings
+            FROM wallet_transactions
+            WHERE driver_id = %s 
+            AND transaction_type = 'ride_payment'
+            AND YEAR(created_at) = YEAR(NOW())
+            AND MONTH(created_at) = MONTH(NOW())
+        """, (driver_id,))
+        month = cursor.fetchone()
+        
+        # Get total completed rides
+        cursor.execute("""
+            SELECT COUNT(*) as completed_rides
+            FROM rides
+            WHERE driver_id = %s AND status = 'completed'
+        """, (driver_id,))
+        rides_count = cursor.fetchone()
+        
+        cursor.close()
+        conn.close()
+        
+        return jsonify({
+            "today_earnings": float(today['today_earnings']),
+            "week_earnings": float(week['week_earnings']),
+            "month_earnings": float(month['month_earnings']),
+            "completed_rides": rides_count['completed_rides']
+        }), 200
+        
+    except Exception as e:
+        print(f"❌ Get earnings summary error: {e}")
+        return jsonify({"error": "Failed to fetch earnings"}), 500
+
+
+# ==================== PAYMENT NOTIFICATION SYSTEM ====================
+
+@app.route("/driver/payment_notifications", methods=["GET"])
+def driver_payment_notifications():
+    """Real-time payment notifications for driver dashboard"""
+    driver_id = session.get("driver_id")
+    if not driver_id:
+        return jsonify({"error": "Not logged in"}), 401
+
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        
+        # Get unread payment notifications (last 5 minutes)
+        cursor.execute("""
+            SELECT 
+                wt.transaction_id,
+                wt.amount,
+                wt.created_at,
+                wt.ride_id,
+                u.firstName,
+                u.lastName
+            FROM wallet_transactions wt
+            LEFT JOIN users u ON wt.user_id = u.user_id
+            WHERE wt.driver_id = %s 
+            AND wt.transaction_type = 'ride_payment'
+            AND wt.created_at >= DATE_SUB(NOW(), INTERVAL 5 MINUTE)
+            ORDER BY wt.created_at DESC
+        """, (driver_id,))
+        
+        notifications = cursor.fetchall()
+        cursor.close()
+        conn.close()
+        
+        for notif in notifications:
+            notif['amount'] = float(notif['amount'])
+            notif['created_at'] = notif['created_at'].isoformat() if notif['created_at'] else None
+        
+        return jsonify({
+            "notifications": notifications,
+            "has_new": len(notifications) > 0
+        }), 200
+        
+    except Exception as e:
+        print(f"❌ Get notifications error: {e}")
+        return jsonify({"error": "Failed to fetch notifications"}), 500
 @app.route("/driver/complete_ride/<int:ride_id>", methods=["POST"])
 def driver_complete_ride(ride_id):
     """Driver completes the ride"""
@@ -1026,6 +1444,155 @@ def driver_update_status():
     except Exception as e:
         print(f"❌ Update status error: {e}")
         return jsonify({"error": "Failed to update status"}), 500
+
+# ==================== DRIVER NOTIFICATIONS ====================
+@app.route("/driver/notifications", methods=["GET"])
+def get_driver_notifications():
+    """Get unread notifications for driver"""
+    driver_id = session.get("driver_id")
+    if not driver_id:
+        return jsonify({"error": "Not logged in"}), 401
+
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        
+        # Get unread notifications
+        cursor.execute("""
+            SELECT 
+                notification_id,
+                ride_id,
+                notification_type,
+                message,
+                created_at,
+                is_read
+            FROM driver_notifications
+            WHERE driver_id = %s 
+            AND is_read = 0
+            ORDER BY created_at DESC
+            LIMIT 10
+        """, (driver_id,))
+        
+        notifications = cursor.fetchall()
+        
+        # Format timestamps
+        for notif in notifications:
+            notif['created_at'] = notif['created_at'].isoformat() if notif['created_at'] else None
+        
+        cursor.close()
+        conn.close()
+        
+        return jsonify({
+            "notifications": notifications,
+            "count": len(notifications)
+        }), 200
+        
+    except Exception as e:
+        print(f"❌ Get notifications error: {e}")
+        return jsonify({"error": "Failed to fetch notifications"}), 500
+
+
+@app.route("/driver/mark_notification_read/<int:notification_id>", methods=["POST"])
+def mark_notification_read(notification_id):
+    """Mark notification as read"""
+    driver_id = session.get("driver_id")
+    if not driver_id:
+        return jsonify({"error": "Not logged in"}), 401
+
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        cursor.execute("""
+            UPDATE driver_notifications
+            SET is_read = 1
+            WHERE notification_id = %s AND driver_id = %s
+        """, (notification_id, driver_id))
+        
+        conn.commit()
+        cursor.close()
+        conn.close()
+        
+        return jsonify({"success": True}), 200
+        
+    except Exception as e:
+        print(f"❌ Mark notification error: {e}")
+        return jsonify({"error": "Failed to mark notification"}), 500
+
+
+# ==================== RATING SYSTEM ====================
+@app.route("/user/submit_rating/<int:ride_id>", methods=["POST"])
+def submit_rating(ride_id):
+    """Submit rating for completed ride"""
+    user_id = session.get("user_id")
+    if not user_id:
+        return jsonify({"error": "Not logged in"}), 401
+
+    data = request.get_json() or {}
+    rating = data.get("rating")
+    feedback = data.get("feedback", "")
+    
+    if not rating or rating < 1 or rating > 5:
+        return jsonify({"error": "Rating must be between 1 and 5"}), 400
+
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        
+        # Verify ride belongs to user and is completed
+        cursor.execute("""
+            SELECT ride_id, driver_id, status, user_rating
+            FROM rides
+            WHERE ride_id = %s AND user_id = %s
+        """, (ride_id, user_id))
+        
+        ride = cursor.fetchone()
+        
+        if not ride:
+            cursor.close()
+            conn.close()
+            return jsonify({"error": "Ride not found"}), 404
+        
+        if ride['status'] != 'completed':
+            cursor.close()
+            conn.close()
+            return jsonify({"error": "Can only rate completed rides"}), 400
+        
+        if ride['user_rating']:
+            cursor.close()
+            conn.close()
+            return jsonify({"error": "You have already rated this ride"}), 400
+        
+        # Update ride with rating
+        cursor.execute("""
+            UPDATE rides
+            SET user_rating = %s, user_feedback = %s
+            WHERE ride_id = %s
+        """, (rating, feedback, ride_id))
+        
+        # Update driver's average rating
+        cursor.execute("""
+            UPDATE drivers d
+            SET rating = (
+                SELECT AVG(user_rating)
+                FROM rides
+                WHERE driver_id = d.driver_id AND user_rating IS NOT NULL
+            )
+            WHERE driver_id = %s
+        """, (ride['driver_id'],))
+        
+        conn.commit()
+        cursor.close()
+        conn.close()
+        
+        return jsonify({
+            "success": True,
+            "message": "Thank you for your rating!"
+        }), 200
+        
+    except Exception as e:
+        print(f"❌ Submit rating error: {e}")
+        return jsonify({"error": "Failed to submit rating"}), 500
 
 # ==================== WALLET SYSTEM ====================
 @app.route("/user/wallet_balance", methods=["GET"])

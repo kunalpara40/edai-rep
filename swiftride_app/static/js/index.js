@@ -2161,24 +2161,365 @@ function refreshRideStatus() {
   alert('✅ Status refreshed!');
 }
 
-// Cancel current ride
-async function cancelCurrentRide() {
-  if (!currentRideId) return;
 
-  if (!confirm('Are you sure you want to cancel this ride?')) {
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// Cancel current ride
+// async function cancelCurrentRide() {
+//   if (!currentRideId) {
+//     alert('❌ No active ride to cancel');
+//     return;
+//   }
+
+
+//   try {
+//     const statusResponse = await fetch(`/user/ride_status/${currentRideId}`, {
+//       credentials: 'include'
+//     });
+    
+//     if (!statusResponse.ok) {
+//       alert('❌ Failed to get ride details');
+//       return;
+//     }
+    
+//     const rideData = await statusResponse.json();
+//     const ride = rideData.ride;
+    
+  
+//     if (ride.status === 'completed') {
+//       alert('❌ Cannot cancel completed ride');
+//       return;
+//     }
+    
+//     if (ride.status === 'cancelled') {
+//       alert('ℹ️ This ride is already cancelled');
+//       return;
+//     }
+    
+
+//     let confirmMessage = 'Are you sure you want to cancel this ride?';
+    
+//     if (ride.payment_status === 'paid') {
+//       confirmMessage = `⚠️ Cancel Ride and Get Refund?\n\nRide Fare: ₹${ride.fare}\n\nIf you cancel now, ₹${ride.fare} will be refunded to your wallet immediately.\n\nDo you want to proceed?`;
+//     }
+    
+//     if (!confirm(confirmMessage)) {
+//       return;
+//     }
+    
+//     console.log('🚫 Cancelling ride:', currentRideId);
+    
+   
+//     const cancelBtn = document.getElementById('cancel-ride-btn');
+//     if (cancelBtn) {
+//       cancelBtn.disabled = true;
+//       cancelBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Cancelling...';
+//     }
+    
+   
+//     const response = await fetch(`/user/cancel_ride/${currentRideId}`, {
+//       method: 'POST',
+//       credentials: 'include'
+//     });
+
+//     const data = await response.json();
+
+//     if (response.ok) {
+//       console.log('✅ Ride cancelled:', data);
+      
+   
+//       if (trackingInterval) {
+//         clearInterval(trackingInterval);
+//         trackingInterval = null;
+//       }
+      
+//       if (statusUpdateInterval) {
+//         clearInterval(statusUpdateInterval);
+//         statusUpdateInterval = null;
+//       }
+      
+     
+//       let successMessage = 'Ride cancelled successfully!';
+      
+//       if (data.refund_processed) {
+//         successMessage = `✅ Ride Cancelled & Refund Processed!\n\n💰 ₹${data.refund_amount} has been refunded to your wallet.\n\nYour updated wallet balance will be reflected shortly.`;
+//       }
+      
+//       alert(successMessage);
+      
+    
+//       if (typeof updateNavbarWalletBalance === 'function') {
+//         setTimeout(updateNavbarWalletBalance, 500);
+//       }
+      
+ 
+//       showPage('home');
+//       currentRideId = null;
+      
+//     } else {
+//       alert('❌ ' + (data.error || 'Failed to cancel ride'));
+      
+     
+//       if (cancelBtn) {
+//         cancelBtn.disabled = false;
+//         cancelBtn.innerHTML = '<i class="fas fa-times"></i> Cancel Ride';
+//       }
+//     }
+
+//   } catch (error) {
+//     console.error('❌ Error cancelling ride:', error);
+//     alert('❌ Network error. Please check your connection and try again.');
+  
+//     const cancelBtn = document.getElementById('cancel-ride-btn');
+//     if (cancelBtn) {
+//       cancelBtn.disabled = false;
+//       cancelBtn.innerHTML = '<i class="fas fa-times"></i> Cancel Ride';
+//     }
+//   }
+// }
+
+// Add this to your index.js - Replace the cancelCurrentRide function
+
+async function cancelCurrentRide() {
+  if (!currentRideId) {
+    alert('❌ No active ride to cancel');
     return;
   }
 
+  // Show cancellation reason modal
+  showCancellationReasonModal(currentRideId);
+}
+
+// Show modal to select cancellation reason
+function showCancellationReasonModal(rideId) {
+  const modal = document.createElement('div');
+  modal.id = 'cancellation-modal';
+  modal.style.cssText = `
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.85);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+    animation: fadeIn 0.3s ease;
+  `;
+  
+  modal.innerHTML = `
+    <div class="cancellation-card" style="
+      background: linear-gradient(135deg, #0f172a, #1e293b);
+      padding: 40px;
+      border-radius: 20px;
+      max-width: 550px;
+      width: 90%;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+      border: 2px solid rgba(239, 68, 68, 0.3);
+      animation: scaleIn 0.4s ease;
+    ">
+      <div style="text-align: center; margin-bottom: 30px;">
+        <i class="fas fa-times-circle" style="font-size: 4rem; color: #ef4444; margin-bottom: 15px;"></i>
+        <h2 style="margin: 0 0 10px; font-size: 1.8rem; color: white;">Cancel Ride?</h2>
+        <p style="color: #aaa; font-size: 1rem;">Please tell us why you're cancelling</p>
+      </div>
+      
+      <div class="cancellation-reasons" style="margin-bottom: 25px;">
+        <label style="display: block; margin-bottom: 15px; cursor: pointer; padding: 15px; background: rgba(255,255,255,0.05); border-radius: 10px; border: 2px solid transparent; transition: all 0.3s;">
+          <input type="radio" name="cancel-reason" value="Driver is taking too long" style="margin-right: 12px;">
+          <span style="color: white; font-size: 1rem;">🕐 Driver is taking too long</span>
+        </label>
+        
+        <label style="display: block; margin-bottom: 15px; cursor: pointer; padding: 15px; background: rgba(255,255,255,0.05); border-radius: 10px; border: 2px solid transparent; transition: all 0.3s;">
+          <input type="radio" name="cancel-reason" value="Changed my mind / plans changed" style="margin-right: 12px;">
+          <span style="color: white; font-size: 1rem;">🔄 Changed my mind / plans changed</span>
+        </label>
+        
+        <label style="display: block; margin-bottom: 15px; cursor: pointer; padding: 15px; background: rgba(255,255,255,0.05); border-radius: 10px; border: 2px solid transparent; transition: all 0.3s;">
+          <input type="radio" name="cancel-reason" value="Booked by mistake" style="margin-right: 12px;">
+          <span style="color: white; font-size: 1rem;">❌ Booked by mistake</span>
+        </label>
+        
+        <label style="display: block; margin-bottom: 15px; cursor: pointer; padding: 15px; background: rgba(255,255,255,0.05); border-radius: 10px; border: 2px solid transparent; transition: all 0.3s;">
+          <input type="radio" name="cancel-reason" value="Found alternative transport" style="margin-right: 12px;">
+          <span style="color: white; font-size: 1rem;">🚕 Found alternative transport</span>
+        </label>
+        
+        <label style="display: block; margin-bottom: 15px; cursor: pointer; padding: 15px; background: rgba(255,255,255,0.05); border-radius: 10px; border: 2px solid transparent; transition: all 0.3s;">
+          <input type="radio" name="cancel-reason" value="other" style="margin-right: 12px;">
+          <span style="color: white; font-size: 1rem;">✍️ Other reason</span>
+        </label>
+        
+        <div id="other-reason-input" style="display: none; margin-top: 15px;">
+          <textarea id="other-reason-text" 
+            placeholder="Please specify your reason..."
+            style="
+              width: 100%;
+              padding: 15px;
+              background: rgba(255, 255, 255, 0.05);
+              border: 1px solid rgba(255, 255, 255, 0.1);
+              border-radius: 10px;
+              color: white;
+              font-size: 1rem;
+              resize: vertical;
+              min-height: 80px;
+            "></textarea>
+        </div>
+      </div>
+      
+      <div style="display: flex; gap: 15px;">
+        <button id="cancel-modal-close" style="
+          flex: 1;
+          padding: 15px;
+          background: rgba(255, 255, 255, 0.1);
+          border: 1px solid rgba(255, 255, 255, 0.2);
+          color: white;
+          border-radius: 10px;
+          font-size: 1rem;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.3s;
+        ">Go Back</button>
+        
+        <button id="confirm-cancel-btn" disabled style="
+          flex: 2;
+          padding: 15px;
+          background: linear-gradient(135deg, #ef4444, #dc2626);
+          border: none;
+          color: white;
+          border-radius: 10px;
+          font-size: 1rem;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.3s;
+          opacity: 0.5;
+        ">Confirm Cancellation</button>
+      </div>
+    </div>
+  `;
+  
+  document.body.appendChild(modal);
+  
+  // Add hover effects to reason labels
+  const reasonLabels = modal.querySelectorAll('label');
+  reasonLabels.forEach(label => {
+    label.addEventListener('mouseenter', function() {
+      this.style.background = 'rgba(255, 255, 255, 0.08)';
+      this.style.borderColor = 'rgba(239, 68, 68, 0.3)';
+    });
+    label.addEventListener('mouseleave', function() {
+      if (!this.querySelector('input').checked) {
+        this.style.background = 'rgba(255, 255, 255, 0.05)';
+        this.style.borderColor = 'transparent';
+      }
+    });
+  });
+  
+  // Handle reason selection
+  const reasonRadios = modal.querySelectorAll('input[name="cancel-reason"]');
+  const otherReasonInput = modal.querySelector('#other-reason-input');
+  const otherReasonText = modal.querySelector('#other-reason-text');
+  const confirmBtn = modal.querySelector('#confirm-cancel-btn');
+  
+  reasonRadios.forEach(radio => {
+    radio.addEventListener('change', function() {
+      // Reset all labels
+      reasonLabels.forEach(lbl => {
+        lbl.style.background = 'rgba(255, 255, 255, 0.05)';
+        lbl.style.borderColor = 'transparent';
+      });
+      
+      // Highlight selected
+      const selectedLabel = this.closest('label');
+      selectedLabel.style.background = 'rgba(239, 68, 68, 0.15)';
+      selectedLabel.style.borderColor = '#ef4444';
+      
+      // Show/hide other reason input
+      if (this.value === 'other') {
+        otherReasonInput.style.display = 'block';
+        confirmBtn.disabled = otherReasonText.value.trim() === '';
+      } else {
+        otherReasonInput.style.display = 'none';
+        confirmBtn.disabled = false;
+        confirmBtn.style.opacity = '1';
+      }
+    });
+  });
+  
+  // Enable confirm button when other reason is typed
+  otherReasonText.addEventListener('input', function() {
+    const otherRadio = modal.querySelector('input[value="other"]');
+    if (otherRadio.checked) {
+      confirmBtn.disabled = this.value.trim() === '';
+      confirmBtn.style.opacity = this.value.trim() === '' ? '0.5' : '1';
+    }
+  });
+  
+  // Close modal button
+  modal.querySelector('#cancel-modal-close').addEventListener('click', () => {
+    modal.remove();
+  });
+  
+  // Confirm cancellation
+  confirmBtn.addEventListener('click', async function() {
+    const selectedReason = modal.querySelector('input[name="cancel-reason"]:checked');
+    
+    if (!selectedReason) {
+      alert('⚠️ Please select a reason for cancellation');
+      return;
+    }
+    
+    let reason = selectedReason.value;
+    
+    if (reason === 'other') {
+      reason = otherReasonText.value.trim();
+      if (!reason) {
+        alert('⚠️ Please specify your reason');
+        return;
+      }
+    }
+    
+    // Proceed with cancellation
+    await processCancellation(rideId, reason, modal);
+  });
+}
+
+// Process the actual cancellation
+async function processCancellation(rideId, reason, modal) {
+  const confirmBtn = modal.querySelector('#confirm-cancel-btn');
+  
+  confirmBtn.disabled = true;
+  confirmBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Cancelling...';
+  
   try {
-    const response = await fetch(`/user/cancel_ride/${currentRideId}`, {
+    console.log('🚫 Cancelling ride:', rideId, 'Reason:', reason);
+    
+    const response = await fetch(`/user/cancel_ride/${rideId}`, {
       method: 'POST',
-      credentials: 'include'
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ reason: reason })
     });
 
     const data = await response.json();
 
     if (response.ok) {
-      alert('✅ Ride cancelled successfully');
+      console.log('✅ Ride cancelled:', data);
+      
+      modal.remove();
       
       // Stop tracking
       if (trackingInterval) {
@@ -2186,18 +2527,61 @@ async function cancelCurrentRide() {
         trackingInterval = null;
       }
       
+      if (statusUpdateInterval) {
+        clearInterval(statusUpdateInterval);
+        statusUpdateInterval = null;
+      }
+      
+      // Show success message with refund info
+      let successMessage = 'Ride cancelled successfully!';
+      
+      if (data.refund_processed) {
+        successMessage = `✅ Ride Cancelled & Refund Processed!\n\n💰 ₹${data.refund_amount} has been refunded to your wallet.\n\nYour updated wallet balance will be reflected shortly.`;
+      }
+      
+      alert(successMessage);
+      
+      // Update wallet balance in navbar
+      if (typeof updateNavbarWalletBalance === 'function') {
+        setTimeout(updateNavbarWalletBalance, 500);
+      }
+      
       // Go back to home
       showPage('home');
       currentRideId = null;
+      
     } else {
       alert('❌ ' + (data.error || 'Failed to cancel ride'));
+      
+      confirmBtn.disabled = false;
+      confirmBtn.innerHTML = 'Confirm Cancellation';
     }
 
   } catch (error) {
-    console.error('Error cancelling ride:', error);
-    alert('❌ Network error');
+    console.error('❌ Error cancelling ride:', error);
+    alert('❌ Network error. Please check your connection and try again.');
+    
+    confirmBtn.disabled = false;
+    confirmBtn.innerHTML = 'Confirm Cancellation';
   }
 }
+
+// Make functions globally accessible
+window.cancelCurrentRide = cancelCurrentRide;
+window.showCancellationReasonModal = showCancellationReasonModal;
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 // Confirm payment
 // Replace the confirmPayment function and related code in your index.js
@@ -2432,11 +2816,12 @@ async function loadRideStatus() {
   }
 }
 
-// Update UI with ride status - FIXED VERSION
+// Enhanced ride status display with payment info
 function updateRideStatusUI(data) {
   const { ride, driver } = data;
 
   console.log('🔄 Updating UI - Ride status:', ride.status);
+  console.log('💳 Payment status:', ride.payment_status);
 
   // Update status badge
   const statusBadge = document.getElementById('ride-status-badge');
@@ -2456,8 +2841,23 @@ function updateRideStatusUI(data) {
     
     // Show driver info
     showDriverInfo(driver);
-    // Show payment options
-    showPaymentOptions();
+    
+    // Show payment options if not paid
+    if (ride.payment_status !== 'paid') {
+      showPaymentOptions();
+    } else {
+      // Payment already done - show confirmation
+      const paymentSection = document.getElementById('payment-section');
+      if (paymentSection) {
+        paymentSection.innerHTML = `
+          <div style="text-align: center; padding: 20px; background: rgba(16, 185, 129, 0.1); border-radius: 12px; border: 2px solid #10b981;">
+            <i class="fas fa-check-circle" style="font-size: 3rem; color: #10b981; margin-bottom: 15px;"></i>
+            <h3 style="margin: 0; color: #10b981;">Payment Completed!</h3>
+            <p style="margin: 10px 0 0; color: #aaa;">₹${ride.fare} paid via wallet</p>
+          </div>
+        `;
+      }
+    }
   } else if (ride.status === 'in_progress') {
     statusBadge.className = 'status-badge in-progress';
     statusBadge.innerHTML = '<i class="fas fa-car"></i> Ride in Progress';
@@ -2475,6 +2875,31 @@ function updateRideStatusUI(data) {
       clearInterval(trackingInterval);
       trackingInterval = null;
     }
+    
+    // Show payment section if not paid
+    if (ride.payment_status !== 'paid') {
+      showPaymentOptions();
+    }
+  } else if (ride.status === 'cancelled') {
+    statusBadge.className = 'status-badge cancelled';
+    statusBadge.innerHTML = '<i class="fas fa-times-circle"></i> Ride Cancelled';
+    
+    if (ride.payment_status === 'refunded') {
+      statusMessage.innerHTML = `
+        Ride cancelled and ₹${ride.fare} refunded to your wallet.<br>
+        <small style="color: #10b981;">Check your wallet for updated balance</small>
+      `;
+    } else {
+      statusMessage.textContent = 'This ride has been cancelled.';
+    }
+    
+    // Stop tracking
+    if (trackingInterval) {
+      clearInterval(trackingInterval);
+      trackingInterval = null;
+    }
+    
+    console.log('🚫 Status: Cancelled');
   }
 
   // Update trip details
@@ -2485,20 +2910,17 @@ function updateRideStatusUI(data) {
 
   // Update map
   updateTrackingMap(ride, driver);
-}
-
-// Make sure confirmPayment is called when button is clicked
-document.addEventListener('DOMContentLoaded', function() {
-  console.log('🎬 Setting up payment button listener');
   
-  // Use event delegation since the button is dynamically created
-  document.body.addEventListener('click', function(e) {
-    if (e.target && e.target.id === 'confirm-payment-btn') {
-      console.log('💳 Payment button clicked');
-      confirmPayment();
+  // Update cancel button visibility
+  const cancelBtn = document.getElementById('cancel-ride-btn');
+  if (cancelBtn) {
+    if (ride.status === 'completed' || ride.status === 'cancelled') {
+      cancelBtn.style.display = 'none';
+    } else {
+      cancelBtn.style.display = 'block';
     }
-  });
-});
+  }
+}
 
 // Update the requestRide function to show status page
 async function requestRide() {
@@ -2567,7 +2989,79 @@ window.addEventListener('beforeunload', function() {
   }
 });
 
+// Show refund confirmation
+function showRefundConfirmation(amount) {
+  const notification = document.createElement('div');
+  notification.style.cssText = `
+    position: fixed;
+    top: 100px;
+    right: 30px;
+    background: linear-gradient(135deg, #10b981, #0ea572);
+    color: white;
+    padding: 25px;
+    border-radius: 16px;
+    box-shadow: 0 12px 40px rgba(16, 185, 129, 0.5);
+    z-index: 9999;
+    max-width: 400px;
+    animation: slideInRight 0.5s ease;
+  `;
+  
+  notification.innerHTML = `
+    <div style="display: flex; align-items: center; gap: 20px;">
+      <i class="fas fa-undo-alt" style="font-size: 2.5rem;"></i>
+      <div>
+        <h3 style="margin: 0 0 8px 0; font-size: 1.3rem;">Refund Processed!</h3>
+        <p style="margin: 0; font-size: 1.1rem;">₹${amount.toFixed(2)} refunded to your wallet</p>
+        <small style="opacity: 0.9; font-size: 0.9rem;">Check your wallet for updated balance</small>
+      </div>
+    </div>
+  `;
+  
+  document.body.appendChild(notification);
+  
+  // Play success sound
+  try {
+    const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBzdmvbXx26BdFwY5TKHn9rJrHAU+csjt3ZJGDAg9PZnp5qxWGAl1kMzj6rFbGg0=');
+    audio.play();
+  } catch (e) {}
+  
+  setTimeout(() => {
+    notification.style.animation = 'fadeOut 0.5s ease forwards';
+    setTimeout(() => notification.remove(), 500);
+  }, 5000);
+}
 
+// Make sure the function is globally accessible
+window.cancelCurrentRide = cancelCurrentRide;
+window.showRefundConfirmation = showRefundConfirmation;
+
+// Add CSS for animations
+const style = document.createElement('style');
+style.textContent = `
+  @keyframes slideInRight {
+    from {
+      transform: translateX(400px);
+      opacity: 0;
+    }
+    to {
+      transform: translateX(0);
+      opacity: 1;
+    }
+  }
+  
+  @keyframes fadeOut {
+    to {
+      opacity: 0;
+      transform: translateX(400px);
+    }
+  }
+  
+  .status-badge.cancelled {
+    background: #ef4444;
+    color: white;
+  }
+`;
+document.head.appendChild(style);
 
 
 
@@ -3050,4 +3544,495 @@ window.stopRideStatusPolling = stopRideStatusPolling;
       initRideMap("ride-map-container");
     }
 
-   
+   // ==================== ADD THIS AT THE VERY END OF YOUR index.js FILE ====================
+// Place this AFTER all your existing code, right before the closing of your file
+
+// ==================== DRIVER NOTIFICATION SYSTEM ====================
+
+let notificationCheckInterval = null;
+
+// Initialize driver notification polling
+function initDriverNotifications() {
+  console.log('🔔 Starting driver notifications...');
+  
+  // Check immediately
+  checkDriverNotifications();
+  
+  // Check every 5 seconds
+  if (notificationCheckInterval) {
+    clearInterval(notificationCheckInterval);
+  }
+  notificationCheckInterval = setInterval(checkDriverNotifications, 5000);
+}
+
+// Check for new notifications
+async function checkDriverNotifications() {
+  try {
+    const response = await fetch('/driver/notifications', {
+      credentials: 'include'
+    });
+    
+    if (!response.ok) return;
+    
+    const data = await response.json();
+    
+    if (data.notifications && data.notifications.length > 0) {
+      data.notifications.forEach(notification => {
+        showDriverNotification(notification);
+      });
+    }
+  } catch (error) {
+    console.error('Error checking notifications:', error);
+  }
+}
+
+// Show notification popup
+function showDriverNotification(notification) {
+  const notificationEl = document.createElement('div');
+  notificationEl.className = 'driver-notification-popup';
+  notificationEl.style.cssText = `
+    position: fixed;
+    top: 100px;
+    right: 30px;
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+    color: white;
+    padding: 20px 25px;
+    border-radius: 12px;
+    box-shadow: 0 8px 24px rgba(239, 68, 68, 0.5);
+    z-index: 9999;
+    max-width: 400px;
+    animation: slideInRight 0.5s ease;
+  `;
+  
+  let iconHtml = '<i class="fas fa-times-circle"></i>';
+  if (notification.notification_type === 'ride_cancelled') {
+    iconHtml = '<i class="fas fa-times-circle"></i>';
+  }
+  
+  notificationEl.innerHTML = `
+    <div style="display: flex; align-items: center; gap: 15px;">
+      <div style="font-size: 2rem;">${iconHtml}</div>
+      <div>
+        <h3 style="margin: 0 0 8px 0; font-size: 1.2rem;">Ride Cancelled</h3>
+        <p style="margin: 0; font-size: 0.95rem;">${notification.message}</p>
+        <small style="opacity: 0.9; font-size: 0.85rem; display: block; margin-top: 8px;">
+          ${new Date(notification.created_at).toLocaleTimeString()}
+        </small>
+      </div>
+    </div>
+  `;
+  
+  document.body.appendChild(notificationEl);
+  
+  // Mark as read
+  fetch(`/driver/mark_notification_read/${notification.notification_id}`, {
+    method: 'POST',
+    credentials: 'include'
+  });
+  
+  // Play notification sound
+  try {
+    const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBzdmvbXx26BdFwY5TKHn9rJrHAU+csjt3ZJGDAg9PZnp5qxWGAl1kMzj6rFbGg0=');
+    audio.play();
+  } catch (e) {}
+  
+  // Remove after 5 seconds
+  setTimeout(() => {
+    notificationEl.style.animation = 'fadeOut 0.5s ease forwards';
+    setTimeout(() => notificationEl.remove(), 500);
+  }, 5000);
+}
+
+// Start notifications when on driver dashboard
+if (window.location.pathname === '/driver/dashboard') {
+  document.addEventListener('DOMContentLoaded', initDriverNotifications);
+}
+
+// Stop notifications when leaving
+window.addEventListener('beforeunload', function() {
+  if (notificationCheckInterval) {
+    clearInterval(notificationCheckInterval);
+  }
+});
+
+
+// ==================== RATING SYSTEM FOR USERS ====================
+
+// Show rating modal after successful payment
+function showRatingModal(rideId) {
+  const modal = document.createElement('div');
+  modal.id = 'rating-modal';
+  modal.style.cssText = `
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+    animation: fadeIn 0.3s ease;
+  `;
+  
+  modal.innerHTML = `
+    <div class="rating-card" style="
+      background: linear-gradient(135deg, #0f172a, #1e3a2d);
+      padding: 40px;
+      border-radius: 20px;
+      max-width: 500px;
+      width: 90%;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+      border: 2px solid rgba(16, 185, 129, 0.3);
+      animation: scaleIn 0.4s ease;
+    ">
+      <div style="text-align: center; margin-bottom: 30px;">
+        <i class="fas fa-check-circle" style="font-size: 4rem; color: #10b981; margin-bottom: 15px;"></i>
+        <h2 style="margin: 0 0 10px; font-size: 1.8rem; color: white;">Ride Completed!</h2>
+        <p style="color: #aaa; font-size: 1rem;">How was your experience?</p>
+      </div>
+      
+      <div class="star-rating" style="text-align: center; margin-bottom: 25px;">
+        <i class="fas fa-star star" data-rating="1" style="font-size: 3rem; color: #444; cursor: pointer; margin: 0 8px; transition: all 0.2s;"></i>
+        <i class="fas fa-star star" data-rating="2" style="font-size: 3rem; color: #444; cursor: pointer; margin: 0 8px; transition: all 0.2s;"></i>
+        <i class="fas fa-star star" data-rating="3" style="font-size: 3rem; color: #444; cursor: pointer; margin: 0 8px; transition: all 0.2s;"></i>
+        <i class="fas fa-star star" data-rating="4" style="font-size: 3rem; color: #444; cursor: pointer; margin: 0 8px; transition: all 0.2s;"></i>
+        <i class="fas fa-star star" data-rating="5" style="font-size: 3rem; color: #444; cursor: pointer; margin: 0 8px; transition: all 0.2s;"></i>
+      </div>
+      
+      <div style="margin-bottom: 25px;">
+        <label style="display: block; margin-bottom: 10px; color: #aaa; font-size: 0.95rem;">
+          Share your feedback (optional)
+        </label>
+        <textarea id="rating-feedback" 
+          placeholder="Tell us about your experience..."
+          style="
+            width: 100%;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            color: white;
+            font-size: 1rem;
+            resize: vertical;
+            min-height: 100px;
+          "></textarea>
+      </div>
+      
+      <div style="display: flex; gap: 15px;">
+        <button id="skip-rating-btn" style="
+          flex: 1;
+          padding: 15px;
+          background: rgba(255, 255, 255, 0.1);
+          border: 1px solid rgba(255, 255, 255, 0.2);
+          color: white;
+          border-radius: 10px;
+          font-size: 1rem;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.3s;
+        ">Skip</button>
+        
+        <button id="submit-rating-btn" disabled style="
+          flex: 2;
+          padding: 15px;
+          background: linear-gradient(135deg, #10b981, #0ea572);
+          border: none;
+          color: white;
+          border-radius: 10px;
+          font-size: 1rem;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.3s;
+          opacity: 0.5;
+        ">Submit Rating</button>
+      </div>
+    </div>
+  `;
+  
+  document.body.appendChild(modal);
+  
+  let selectedRating = 0;
+  
+  // Star rating interaction
+  const stars = modal.querySelectorAll('.star');
+  stars.forEach(star => {
+    star.addEventListener('mouseenter', function() {
+      const rating = parseInt(this.dataset.rating);
+      highlightStars(rating);
+    });
+    
+    star.addEventListener('click', function() {
+      selectedRating = parseInt(this.dataset.rating);
+      highlightStars(selectedRating);
+      document.getElementById('submit-rating-btn').disabled = false;
+      document.getElementById('submit-rating-btn').style.opacity = '1';
+    });
+  });
+  
+  modal.addEventListener('mouseleave', function() {
+    if (selectedRating > 0) {
+      highlightStars(selectedRating);
+    }
+  });
+  
+  function highlightStars(rating) {
+    stars.forEach((star, index) => {
+      if (index < rating) {
+        star.style.color = '#ffc107';
+        star.style.transform = 'scale(1.2)';
+      } else {
+        star.style.color = '#444';
+        star.style.transform = 'scale(1)';
+      }
+    });
+  }
+  
+  // Submit rating
+  document.getElementById('submit-rating-btn').addEventListener('click', async function() {
+    if (selectedRating === 0) return;
+    
+    const feedback = document.getElementById('rating-feedback').value.trim();
+    
+    this.disabled = true;
+    this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
+    
+    try {
+      const response = await fetch(`/user/submit_rating/${rideId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          rating: selectedRating,
+          feedback: feedback
+        })
+      });
+      
+      const data = await response.json();
+      
+      if (response.ok) {
+        modal.remove();
+        showSuccessMessage('Thank you for your rating!');
+        // Redirect to home after 2 seconds
+        setTimeout(() => {
+          if (typeof showPage === 'function') {
+            showPage('home');
+          } else {
+            window.location.href = '/';
+          }
+        }, 2000);
+      } else {
+        alert('❌ ' + (data.error || 'Failed to submit rating'));
+        this.disabled = false;
+        this.innerHTML = 'Submit Rating';
+      }
+    } catch (error) {
+      console.error('Rating error:', error);
+      alert('❌ Network error');
+      this.disabled = false;
+      this.innerHTML = 'Submit Rating';
+    }
+  });
+  
+  // Skip rating
+  document.getElementById('skip-rating-btn').addEventListener('click', function() {
+    modal.remove();
+    if (typeof showPage === 'function') {
+      showPage('home');
+    } else {
+      window.location.href = '/';
+    }
+  });
+}
+
+// Show success message
+function showSuccessMessage(message) {
+  const successEl = document.createElement('div');
+  successEl.style.cssText = `
+    position: fixed;
+    top: 100px;
+    right: 30px;
+    background: linear-gradient(135deg, #10b981, #0ea572);
+    color: white;
+    padding: 20px 25px;
+    border-radius: 12px;
+    box-shadow: 0 8px 24px rgba(16, 185, 129, 0.5);
+    z-index: 9999;
+    animation: slideInRight 0.5s ease;
+  `;
+  
+  successEl.innerHTML = `
+    <div style="display: flex; align-items: center; gap: 15px;">
+      <i class="fas fa-check-circle" style="font-size: 2rem;"></i>
+      <div>
+        <h4 style="margin: 0; font-size: 1.1rem;">${message}</h4>
+      </div>
+    </div>
+  `;
+  
+  document.body.appendChild(successEl);
+  
+  setTimeout(() => {
+    successEl.style.animation = 'fadeOut 0.5s ease forwards';
+    setTimeout(() => successEl.remove(), 500);
+  }, 3000);
+}
+
+
+// ==================== OVERRIDE EXISTING confirmPayment FUNCTION ====================
+// This replaces your existing confirmPayment function to add rating modal
+
+// Store the original confirmPayment if it exists
+const originalConfirmPayment = window.confirmPayment;
+
+// Create new enhanced version
+async function confirmPaymentEnhanced() {
+  if (!currentRideId) {
+    console.error('❌ No currentRideId found');
+    return;
+  }
+
+  const confirmBtn = document.getElementById('confirm-payment-btn');
+  if (confirmBtn) {
+    confirmBtn.disabled = true;
+    confirmBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing Payment...';
+  }
+
+  try {
+    const response = await fetch('/user/confirm_payment', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({
+        ride_id: currentRideId
+      })
+    });
+
+    const data = await response.json();
+
+    if (response.ok) {
+      console.log('✅ Payment successful:', data);
+      
+      // Show payment success in UI
+      const paymentSection = document.getElementById('payment-section');
+      if (paymentSection) {
+        paymentSection.innerHTML = `
+          <div style="text-align: center; padding: 30px; background: rgba(16, 185, 129, 0.1); border-radius: 12px; border: 2px solid #10b981;">
+            <i class="fas fa-check-circle" style="font-size: 4rem; color: #10b981; margin-bottom: 20px;"></i>
+            <h3 style="margin: 0 0 15px; color: #10b981;">Payment Successful!</h3>
+            <div style="background: rgba(255,255,255,0.05); padding: 20px; border-radius: 8px; margin: 20px 0;">
+              <div style="display: flex; justify-content: space-between; margin: 10px 0; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.1);">
+                <span>Amount Paid:</span>
+                <strong style="color: #10b981;">₹${data.fare.toFixed(2)}</strong>
+              </div>
+              <div style="display: flex; justify-content: space-between; margin: 10px 0; padding: 8px 0;">
+                <span>Your New Balance:</span>
+                <strong style="color: #10b981;">₹${data.user_new_balance.toFixed(2)}</strong>
+              </div>
+            </div>
+          </div>
+        `;
+      }
+
+      // Update navbar wallet balance
+      if (typeof updateNavbarWalletBalance === 'function') {
+        updateNavbarWalletBalance();
+      }
+
+      // 🆕 Show rating modal after 1 second
+      setTimeout(() => {
+        showRatingModal(currentRideId);
+      }, 1000);
+
+    } else {
+      // Payment failed - re-enable button
+      if (confirmBtn) {
+        confirmBtn.disabled = false;
+        confirmBtn.innerHTML = '<i class="fas fa-check-circle"></i> Pay ₹<span id="pay-amount">0</span> from Wallet';
+      }
+      
+      if (data.error === 'Insufficient wallet balance') {
+        alert(`❌ Insufficient Balance!\n\nRequired: ₹${data.required}\nAvailable: ₹${data.available}\n\nPlease add money to your wallet.`);
+      } else {
+        alert('❌ ' + (data.error || 'Payment failed'));
+      }
+    }
+
+  } catch (error) {
+    console.error('Error confirming payment:', error);
+    alert('❌ Network error during payment');
+    
+    if (confirmBtn) {
+      confirmBtn.disabled = false;
+      confirmBtn.innerHTML = '<i class="fas fa-check-circle"></i> Pay ₹<span id="pay-amount">0</span> from Wallet';
+    }
+  }
+}
+
+// Replace the global confirmPayment function
+window.confirmPayment = confirmPaymentEnhanced;
+window.showRatingModal = showRatingModal;
+window.initDriverNotifications = initDriverNotifications;
+
+console.log('✅ Rating and notification system loaded successfully!');
+
+
+// ==================== ADD CSS ANIMATIONS ====================
+(function() {
+  const style = document.createElement('style');
+  style.textContent = `
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    
+    @keyframes scaleIn {
+      from {
+        opacity: 0;
+        transform: scale(0.9);
+      }
+      to {
+        opacity: 1;
+        transform: scale(1);
+      }
+    }
+    
+    @keyframes slideInRight {
+      from {
+        transform: translateX(400px);
+        opacity: 0;
+      }
+      to {
+        transform: translateX(0);
+        opacity: 1;
+      }
+    }
+    
+    @keyframes fadeOut {
+      to {
+        opacity: 0;
+        transform: translateX(400px);
+      }
+    }
+    
+    .driver-notification-popup {
+      animation: slideInRight 0.5s ease !important;
+    }
+    
+    #rating-modal textarea:focus {
+      outline: none;
+      border-color: #10b981;
+    }
+    
+    #submit-rating-btn:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 16px rgba(16, 185, 129, 0.3);
+    }
+    
+    #skip-rating-btn:hover {
+      background: rgba(255, 255, 255, 0.15);
+    }
+  `;
+  document.head.appendChild(style);
+})();

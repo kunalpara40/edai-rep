@@ -694,39 +694,166 @@ def user_my_rides():
         return jsonify({"error": "Failed to fetch rides"}), 500
 
 @app.route("/user/cancel_ride/<int:ride_id>", methods=["POST"])
-def cancel_ride(ride_id):
-    """User cancels a ride request"""
+def cancel_ride_with_refund(ride_id):
+    """Enhanced: Cancel ride with automatic refund if payment was made"""
     user_id = session.get("user_id")
     if not user_id:
         return jsonify({"error": "Not logged in"}), 401
 
+    conn = None
+    cursor = None
+    
     try:
         conn = get_db_connection()
-        cursor = conn.cursor()
+        conn.start_transaction()
+        cursor = conn.cursor(dictionary=True)
         
+        # Get ride details with payment info
         cursor.execute("""
-            UPDATE rides
-            SET status='cancelled', completed_at=NOW()
-            WHERE ride_id=%s AND user_id=%s AND status IN ('requested', 'accepted')
+            SELECT r.ride_id, r.user_id, r.driver_id, r.status, r.payment_status, 
+                   r.fare, r.payment_method,
+                   u.wallet_balance as user_wallet,
+                   d.wallet_balance as driver_wallet,
+                   u.firstName, u.lastName,
+                   d.full_name as driver_name
+            FROM rides r
+            JOIN users u ON r.user_id = u.user_id
+            LEFT JOIN drivers d ON r.driver_id = d.driver_id
+            WHERE r.ride_id = %s AND r.user_id = %s
+            FOR UPDATE
         """, (ride_id, user_id))
         
-        if cursor.rowcount == 0:
+        ride = cursor.fetchone()
+        
+        if not ride:
             conn.rollback()
-            cursor.close()
-            conn.close()
-            return jsonify({"error": "Cannot cancel this ride"}), 400
+            return jsonify({"error": "Ride not found"}), 404
+        
+        # Check if ride can be cancelled
+        if ride['status'] not in ['requested', 'accepted', 'in_progress']:
+            conn.rollback()
+            return jsonify({"error": "Cannot cancel this ride - it's already completed or cancelled"}), 400
+        
+        refund_amount = 0
+        refund_processed = False
+        
+        # If payment was made, process refund
+        if ride['payment_status'] == 'paid' and ride['payment_method'] == 'wallet':
+            fare = float(ride['fare'])
+            user_wallet = float(ride['user_wallet'])
+            driver_wallet = float(ride['driver_wallet'])
+            
+            # Calculate new balances (reverse the payment)
+            new_user_balance = user_wallet + fare
+            new_driver_balance = driver_wallet - fare
+            
+            print(f"🔄 Processing refund:")
+            print(f"   Refund amount: ₹{fare}")
+            print(f"   User wallet: ₹{user_wallet} → ₹{new_user_balance}")
+            print(f"   Driver wallet: ₹{driver_wallet} → ₹{new_driver_balance}")
+            
+            # 1. Refund to user wallet
+            cursor.execute("""
+                UPDATE users
+                SET wallet_balance = %s
+                WHERE user_id = %s
+            """, (new_user_balance, user_id))
+            
+            # 2. Deduct from driver wallet (if driver assigned)
+            if ride['driver_id']:
+                cursor.execute("""
+                    UPDATE drivers
+                    SET wallet_balance = %s,
+                        total_earnings = total_earnings - %s
+                    WHERE driver_id = %s
+                """, (new_driver_balance, fare, ride['driver_id']))
+            
+            # 3. Record refund transaction for USER
+            cursor.execute("""
+                INSERT INTO wallet_transactions 
+                (user_id, driver_id, ride_id, transaction_type, amount, 
+                 balance_before, balance_after, description)
+                VALUES (%s, %s, %s, 'refund', %s, %s, %s, %s)
+            """, (
+                user_id,
+                ride['driver_id'],
+                ride_id,
+                fare,
+                user_wallet,
+                new_user_balance,
+                f"Refund for cancelled Ride #{ride_id}"
+            ))
+            
+            # 4. Record refund transaction for DRIVER (if assigned)
+            if ride['driver_id']:
+                cursor.execute("""
+                    INSERT INTO wallet_transactions 
+                    (driver_id, user_id, ride_id, transaction_type, amount, 
+                     balance_before, balance_after, description)
+                    VALUES (%s, %s, %s, 'refund', %s, %s, %s, %s)
+                """, (
+                    ride['driver_id'],
+                    user_id,
+                    ride_id,
+                    -fare,  # Negative amount for driver (deduction)
+                    driver_wallet,
+                    new_driver_balance,
+                    f"Refund processed for cancelled Ride #{ride_id} by {ride['firstName']} {ride['lastName']}"
+                ))
+            
+            refund_amount = fare
+            refund_processed = True
+            
+            print(f"✅ Refund processed successfully")
+        
+        # Update ride status to cancelled
+        cursor.execute("""
+            UPDATE rides
+            SET status = 'cancelled', 
+                completed_at = NOW(),
+                payment_status = CASE 
+                    WHEN payment_status = 'paid' THEN 'refunded'
+                    ELSE payment_status
+                END
+            WHERE ride_id = %s
+        """, (ride_id,))
+        
+        # Update driver status if assigned
+        if ride['driver_id']:
+            cursor.execute("""
+                UPDATE drivers
+                SET status = 'available'
+                WHERE driver_id = %s
+            """, (ride['driver_id'],))
         
         conn.commit()
-        cursor.close()
-        conn.close()
         
-        print(f"✅ User {user_id} cancelled ride {ride_id}")
-        return jsonify({"message": "Ride cancelled successfully"}), 200
+        print(f"✅ Ride #{ride_id} cancelled successfully")
+        
+        response_message = "Ride cancelled successfully"
+        if refund_processed:
+            response_message += f" and ₹{refund_amount} refunded to your wallet"
+        
+        return jsonify({
+            "success": True,
+            "message": response_message,
+            "refund_processed": refund_processed,
+            "refund_amount": refund_amount
+        }), 200
         
     except Exception as e:
+        if conn:
+            conn.rollback()
         print(f"❌ Cancel ride error: {e}")
-        return jsonify({"error": "Failed to cancel ride"}), 500
-
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": "Failed to cancel ride", "details": str(e)}), 500
+        
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
 @app.route("/user/ride_status/<int:ride_id>", methods=["GET"])
 def get_ride_status(ride_id):
     """Get current status of a ride with driver location"""
@@ -945,6 +1072,170 @@ def driver_start_ride(ride_id):
         print(f"❌ Start ride error: {e}")
         return jsonify({"error": "Failed to start ride"}), 500
 
+@app.route("/driver/recent_payments", methods=["GET"])
+def driver_recent_payments():
+    """Get driver's recent payment notifications"""
+    driver_id = session.get("driver_id")
+    if not driver_id:
+        return jsonify({"error": "Not logged in"}), 401
+
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        
+        # Get recent payments received
+        cursor.execute("""
+            SELECT 
+                wt.transaction_id,
+                wt.amount,
+                wt.created_at,
+                wt.description,
+                wt.ride_id,
+                u.firstName,
+                u.lastName,
+                r.pickup_address,
+                r.dropoff_address
+            FROM wallet_transactions wt
+            LEFT JOIN users u ON wt.user_id = u.user_id
+            LEFT JOIN rides r ON wt.ride_id = r.ride_id
+            WHERE wt.driver_id = %s 
+            AND wt.transaction_type = 'ride_payment'
+            AND wt.created_at >= DATE_SUB(NOW(), INTERVAL 24 HOUR)
+            ORDER BY wt.created_at DESC
+            LIMIT 10
+        """, (driver_id,))
+        
+        payments = cursor.fetchall()
+        cursor.close()
+        conn.close()
+        
+        # Convert to JSON serializable format
+        for payment in payments:
+            payment['amount'] = float(payment['amount'])
+            payment['created_at'] = payment['created_at'].isoformat() if payment['created_at'] else None
+            payment['user_name'] = f"{payment['firstName']} {payment['lastName']}" if payment['firstName'] else 'Unknown'
+        
+        return jsonify({
+            "payments": payments,
+            "count": len(payments)
+        }), 200
+        
+    except Exception as e:
+        print(f"❌ Get recent payments error: {e}")
+        return jsonify({"error": "Failed to fetch payments"}), 500
+
+
+@app.route("/driver/earnings_summary", methods=["GET"])
+def driver_earnings_summary():
+    """Get driver's earnings summary"""
+    driver_id = session.get("driver_id")
+    if not driver_id:
+        return jsonify({"error": "Not logged in"}), 401
+
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        
+        # Get today's earnings
+        cursor.execute("""
+            SELECT COALESCE(SUM(amount), 0) as today_earnings
+            FROM wallet_transactions
+            WHERE driver_id = %s 
+            AND transaction_type = 'ride_payment'
+            AND DATE(created_at) = CURDATE()
+        """, (driver_id,))
+        today = cursor.fetchone()
+        
+        # Get this week's earnings
+        cursor.execute("""
+            SELECT COALESCE(SUM(amount), 0) as week_earnings
+            FROM wallet_transactions
+            WHERE driver_id = %s 
+            AND transaction_type = 'ride_payment'
+            AND YEARWEEK(created_at) = YEARWEEK(NOW())
+        """, (driver_id,))
+        week = cursor.fetchone()
+        
+        # Get this month's earnings
+        cursor.execute("""
+            SELECT COALESCE(SUM(amount), 0) as month_earnings
+            FROM wallet_transactions
+            WHERE driver_id = %s 
+            AND transaction_type = 'ride_payment'
+            AND YEAR(created_at) = YEAR(NOW())
+            AND MONTH(created_at) = MONTH(NOW())
+        """, (driver_id,))
+        month = cursor.fetchone()
+        
+        # Get total completed rides
+        cursor.execute("""
+            SELECT COUNT(*) as completed_rides
+            FROM rides
+            WHERE driver_id = %s AND status = 'completed'
+        """, (driver_id,))
+        rides_count = cursor.fetchone()
+        
+        cursor.close()
+        conn.close()
+        
+        return jsonify({
+            "today_earnings": float(today['today_earnings']),
+            "week_earnings": float(week['week_earnings']),
+            "month_earnings": float(month['month_earnings']),
+            "completed_rides": rides_count['completed_rides']
+        }), 200
+        
+    except Exception as e:
+        print(f"❌ Get earnings summary error: {e}")
+        return jsonify({"error": "Failed to fetch earnings"}), 500
+
+
+# ==================== PAYMENT NOTIFICATION SYSTEM ====================
+
+@app.route("/driver/payment_notifications", methods=["GET"])
+def driver_payment_notifications():
+    """Real-time payment notifications for driver dashboard"""
+    driver_id = session.get("driver_id")
+    if not driver_id:
+        return jsonify({"error": "Not logged in"}), 401
+
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        
+        # Get unread payment notifications (last 5 minutes)
+        cursor.execute("""
+            SELECT 
+                wt.transaction_id,
+                wt.amount,
+                wt.created_at,
+                wt.ride_id,
+                u.firstName,
+                u.lastName
+            FROM wallet_transactions wt
+            LEFT JOIN users u ON wt.user_id = u.user_id
+            WHERE wt.driver_id = %s 
+            AND wt.transaction_type = 'ride_payment'
+            AND wt.created_at >= DATE_SUB(NOW(), INTERVAL 5 MINUTE)
+            ORDER BY wt.created_at DESC
+        """, (driver_id,))
+        
+        notifications = cursor.fetchall()
+        cursor.close()
+        conn.close()
+        
+        for notif in notifications:
+            notif['amount'] = float(notif['amount'])
+            notif['created_at'] = notif['created_at'].isoformat() if notif['created_at'] else None
+        
+        return jsonify({
+            "notifications": notifications,
+            "has_new": len(notifications) > 0
+        }), 200
+        
+    except Exception as e:
+        print(f"❌ Get notifications error: {e}")
+        return jsonify({"error": "Failed to fetch notifications"}), 500
 @app.route("/driver/complete_ride/<int:ride_id>", methods=["POST"])
 def driver_complete_ride(ride_id):
     """Driver completes the ride"""
@@ -1073,6 +1364,7 @@ def get_user_wallet_balance():
         traceback.print_exc()
         return jsonify({"error": "Failed to get wallet balance", "details": str(e)}), 500
 
+
 @app.route("/driver/wallet_balance", methods=["GET"])
 def get_driver_wallet_balance():
     """Get driver's current wallet balance"""
@@ -1105,6 +1397,7 @@ def get_driver_wallet_balance():
         print(f"❌ Get driver wallet balance error: {e}")
         return jsonify({"error": "Failed to get wallet balance"}), 500
 
+
 @app.route("/user/confirm_payment", methods=["POST"])
 def confirm_payment():
     """User confirms wallet payment - transfers money from user to driver"""
@@ -1124,6 +1417,8 @@ def confirm_payment():
         return jsonify({"error": "ride_id required"}), 400
 
     conn = None
+    cursor = None
+    
     try:
         conn = get_db_connection()
         conn.start_transaction()
@@ -1133,7 +1428,9 @@ def confirm_payment():
         cursor.execute("""
             SELECT r.ride_id, r.user_id, r.driver_id, r.fare, r.status, r.payment_status,
                    u.wallet_balance as user_wallet,
-                   d.wallet_balance as driver_wallet
+                   d.wallet_balance as driver_wallet,
+                   u.firstName, u.lastName,
+                   d.full_name as driver_name
             FROM rides r
             JOIN users u ON r.user_id = u.user_id
             LEFT JOIN drivers d ON r.driver_id = d.driver_id
@@ -1143,24 +1440,20 @@ def confirm_payment():
         
         ride = cursor.fetchone()
         
+        # Validation checks
         if not ride:
             conn.rollback()
-            cursor.close()
-            conn.close()
             return jsonify({"error": "Ride not found"}), 404
         
         if ride['payment_status'] == 'paid':
             conn.rollback()
-            cursor.close()
-            conn.close()
             return jsonify({"error": "Payment already completed"}), 400
         
         if not ride['driver_id']:
             conn.rollback()
-            cursor.close()
-            conn.close()
             return jsonify({"error": "No driver assigned to this ride"}), 400
         
+        # Convert to float for calculations
         fare = float(ride['fare'])
         user_wallet = float(ride['user_wallet'])
         driver_wallet = float(ride['driver_wallet'])
@@ -1173,33 +1466,37 @@ def confirm_payment():
         # Check if user has sufficient balance
         if user_wallet < fare:
             conn.rollback()
-            cursor.close()
-            conn.close()
             return jsonify({
                 "error": "Insufficient wallet balance",
                 "required": fare,
-                "available": user_wallet
+                "available": user_wallet,
+                "shortage": fare - user_wallet
             }), 400
         
         # Calculate new balances
         new_user_balance = user_wallet - fare
         new_driver_balance = driver_wallet + fare
         
-        # Deduct from user wallet
+        # 1. Deduct from user wallet
         cursor.execute("""
             UPDATE users
             SET wallet_balance = %s
             WHERE user_id = %s
         """, (new_user_balance, user_id))
         
-        # Add to driver wallet
+        print(f"✅ User wallet updated: ₹{user_wallet} → ₹{new_user_balance}")
+        
+        # 2. Add to driver wallet and earnings
         cursor.execute("""
             UPDATE drivers
-            SET wallet_balance = %s, total_earnings = total_earnings + %s
+            SET wallet_balance = %s, 
+                total_earnings = total_earnings + %s
             WHERE driver_id = %s
         """, (new_driver_balance, fare, ride['driver_id']))
         
-        # Update ride payment status
+        print(f"✅ Driver wallet updated: ₹{driver_wallet} → ₹{new_driver_balance}")
+        
+        # 3. Update ride payment status
         cursor.execute("""
             UPDATE rides
             SET payment_method = 'wallet', 
@@ -1207,36 +1504,57 @@ def confirm_payment():
             WHERE ride_id = %s
         """, (ride_id,))
         
-        # Record transaction for user (debit)
+        print(f"✅ Ride #{ride_id} marked as paid")
+        
+        # 4. Record transaction for USER (debit) - FIXED: Added driver_id
         cursor.execute("""
             INSERT INTO wallet_transactions 
-            (user_id, ride_id, transaction_type, amount, balance_before, balance_after, description)
-            VALUES (%s, %s, 'ride_payment', %s, %s, %s, %s)
-        """, (user_id, ride_id, -fare, user_wallet, new_user_balance, 
-              f"Payment for Ride #{ride_id}"))
+            (user_id, driver_id, ride_id, transaction_type, amount, balance_before, balance_after, description)
+            VALUES (%s, %s, %s, 'ride_payment', %s, %s, %s, %s)
+        """, (
+            user_id, 
+            ride['driver_id'],  # ✅ FIXED: Added driver_id link
+            ride_id, 
+            fare,  # ✅ FIXED: Positive amount (debit is implied by transaction_type)
+            user_wallet, 
+            new_user_balance, 
+            f"Payment for Ride #{ride_id} to {ride['driver_name']}"
+        ))
         
-        # Record transaction for driver (credit)
+        print(f"✅ User transaction recorded")
+        
+        # 5. Record transaction for DRIVER (credit) - FIXED: Added user_id
         cursor.execute("""
             INSERT INTO wallet_transactions 
-            (driver_id, ride_id, transaction_type, amount, balance_before, balance_after, description)
-            VALUES (%s, %s, 'ride_payment', %s, %s, %s, %s)
-        """, (ride['driver_id'], ride_id, fare, driver_wallet, new_driver_balance,
-              f"Received payment for Ride #{ride_id}"))
+            (driver_id, user_id, ride_id, transaction_type, amount, balance_before, balance_after, description)
+            VALUES (%s, %s, %s, 'ride_payment', %s, %s, %s, %s)
+        """, (
+            ride['driver_id'],
+            user_id,  # ✅ FIXED: Added user_id link
+            ride_id, 
+            fare, 
+            driver_wallet, 
+            new_driver_balance,
+            f"Payment received for Ride #{ride_id} from {ride['firstName']} {ride['lastName']}"
+        ))
         
+        print(f"✅ Driver transaction recorded")
+        
+        # Commit all changes
         conn.commit()
-        cursor.close()
-        conn.close()
         
         print(f"✅ Payment successful: User {user_id} paid ₹{fare} to Driver {ride['driver_id']}")
         print(f"   User balance: ₹{user_wallet} → ₹{new_user_balance}")
         print(f"   Driver balance: ₹{driver_wallet} → ₹{new_driver_balance}")
         
         return jsonify({
+            "success": True,
             "message": "Payment successful",
             "fare": fare,
             "user_new_balance": new_user_balance,
             "driver_new_balance": new_driver_balance,
-            "transaction_completed": True
+            "transaction_completed": True,
+            "ride_id": ride_id
         }), 200
         
     except Exception as e:
@@ -1245,7 +1563,18 @@ def confirm_payment():
         print(f"❌ Payment error: {e}")
         import traceback
         traceback.print_exc()
-        return jsonify({"error": "Payment failed", "details": str(e)}), 500
+        return jsonify({
+            "success": False,
+            "error": "Payment failed", 
+            "details": str(e)
+        }), 500
+        
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
+
 
 @app.route("/user/add_money", methods=["POST"])
 def add_money_to_wallet():
@@ -1257,9 +1586,12 @@ def add_money_to_wallet():
     data = request.get_json() or {}
     amount = data.get("amount")
     
-    if not amount or amount <= 0:
-        return jsonify({"error": "Invalid amount"}), 400
+    if not amount or float(amount) <= 0:
+        return jsonify({"error": "Invalid amount. Must be greater than 0"}), 400
 
+    conn = None
+    cursor = None
+    
     try:
         conn = get_db_connection()
         conn.start_transaction()
@@ -1267,12 +1599,18 @@ def add_money_to_wallet():
         
         # Get current balance
         cursor.execute("""
-            SELECT wallet_balance FROM users WHERE user_id = %s FOR UPDATE
+            SELECT wallet_balance, firstName, lastName FROM users WHERE user_id = %s FOR UPDATE
         """, (user_id,))
         
         user = cursor.fetchone()
+        
+        if not user:
+            conn.rollback()
+            return jsonify({"error": "User not found"}), 404
+        
         old_balance = float(user['wallet_balance'])
-        new_balance = old_balance + float(amount)
+        amount = float(amount)
+        new_balance = old_balance + amount
         
         # Update balance
         cursor.execute("""
@@ -1283,16 +1621,19 @@ def add_money_to_wallet():
         cursor.execute("""
             INSERT INTO wallet_transactions 
             (user_id, transaction_type, amount, balance_before, balance_after, description)
-            VALUES (%s, 'deposit', %s, %s, %s, 'Money added to wallet')
-        """, (user_id, amount, old_balance, new_balance))
+            VALUES (%s, 'deposit', %s, %s, %s, %s)
+        """, (user_id, amount, old_balance, new_balance, f"Added ₹{amount} to wallet"))
         
         conn.commit()
-        cursor.close()
-        conn.close()
         
-        print(f"✅ User {user_id} added ₹{amount} to wallet")
+        print(f"✅ User {user_id} ({user['firstName']} {user['lastName']}) added ₹{amount} to wallet")
+        print(f"   Balance: ₹{old_balance} → ₹{new_balance}")
+        
         return jsonify({
+            "success": True,
             "message": "Money added successfully",
+            "amount_added": amount,
+            "old_balance": old_balance,
             "new_balance": new_balance
         }), 200
         
@@ -1300,7 +1641,119 @@ def add_money_to_wallet():
         if conn:
             conn.rollback()
         print(f"❌ Add money error: {e}")
-        return jsonify({"error": "Failed to add money"}), 500
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": "Failed to add money", "details": str(e)}), 500
+        
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
+
+
+# ✅ BONUS: Get transaction history
+@app.route("/user/transaction_history", methods=["GET"])
+def get_user_transaction_history():
+    """Get user's wallet transaction history"""
+    user_id = session.get("user_id")
+    if not user_id:
+        return jsonify({"error": "Not logged in"}), 401
+
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        
+        cursor.execute("""
+            SELECT 
+                wt.transaction_id,
+                wt.transaction_type,
+                wt.amount,
+                wt.balance_before,
+                wt.balance_after,
+                wt.description,
+                wt.created_at,
+                wt.ride_id,
+                d.full_name as driver_name
+            FROM wallet_transactions wt
+            LEFT JOIN drivers d ON wt.driver_id = d.driver_id
+            WHERE wt.user_id = %s
+            ORDER BY wt.created_at DESC
+            LIMIT 50
+        """, (user_id,))
+        
+        transactions = cursor.fetchall()
+        cursor.close()
+        conn.close()
+        
+        # Convert Decimal and datetime to JSON serializable format
+        for txn in transactions:
+            txn['amount'] = float(txn['amount'])
+            txn['balance_before'] = float(txn['balance_before'])
+            txn['balance_after'] = float(txn['balance_after'])
+            txn['created_at'] = txn['created_at'].isoformat() if txn['created_at'] else None
+        
+        return jsonify({
+            "transactions": transactions,
+            "count": len(transactions)
+        }), 200
+        
+    except Exception as e:
+        print(f"❌ Get transaction history error: {e}")
+        return jsonify({"error": "Failed to get transaction history"}), 500
+
+
+@app.route("/driver/transaction_history", methods=["GET"])
+def get_driver_transaction_history():
+    """Get driver's wallet transaction history"""
+    driver_id = session.get("driver_id")
+    if not driver_id:
+        return jsonify({"error": "Not logged in"}), 401
+
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        
+        cursor.execute("""
+            SELECT 
+                wt.transaction_id,
+                wt.transaction_type,
+                wt.amount,
+                wt.balance_before,
+                wt.balance_after,
+                wt.description,
+                wt.created_at,
+                wt.ride_id,
+                u.firstName,
+                u.lastName
+            FROM wallet_transactions wt
+            LEFT JOIN users u ON wt.user_id = u.user_id
+            WHERE wt.driver_id = %s
+            ORDER BY wt.created_at DESC
+            LIMIT 50
+        """, (driver_id,))
+        
+        transactions = cursor.fetchall()
+        cursor.close()
+        conn.close()
+        
+        # Convert Decimal and datetime to JSON serializable format
+        for txn in transactions:
+            txn['amount'] = float(txn['amount'])
+            txn['balance_before'] = float(txn['balance_before'])
+            txn['balance_after'] = float(txn['balance_after'])
+            txn['created_at'] = txn['created_at'].isoformat() if txn['created_at'] else None
+            if txn.get('firstName') and txn.get('lastName'):
+                txn['user_name'] = f"{txn['firstName']} {txn['lastName']}"
+        
+        return jsonify({
+            "transactions": transactions,
+            "count": len(transactions)
+        }), 200
+        
+    except Exception as e:
+        print(f"❌ Get driver transaction history error: {e}")
+        return jsonify({"error": "Failed to get transaction history"}), 500
 
 # ==================== DEBUG ENDPOINTS ====================
 @app.route("/debug/session", methods=["GET"])
@@ -1338,3 +1791,42 @@ if __name__ == "__main__":
     print("=" * 60 + "\n")
     
     app.run(debug=True, port=5000)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

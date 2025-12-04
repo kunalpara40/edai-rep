@@ -346,7 +346,7 @@
 
   <!-- Navigation -->
  <nav class="navbar">
-    <a href="#" class="nav-logo" onclick="showPage('home')">SwiftRide</a>
+    <a href="#" class="nav-logo" onclick="showPage('home')" >SwiftRide</a>
     
     <div class="nav-links" id="nav-links">
       <a href="#" class="nav-link active" onclick="showPage('home')">Home</a>
@@ -906,7 +906,9 @@
         <div class="progress-step">3</div>
       </div>
 
-      
+        <div class="form-link">
+          Already have an account? <a href="#" onclick="showPage('driver-login')">Log in</a>
+        </div>
       <div class="form-step active" id="driverStep1">
         <div class="input-row">
           <div class="input-group">
@@ -1817,6 +1819,281 @@ document.addEventListener('DOMContentLoaded', function() {
 window.addEventListener('paymentCompleted', function() {
   updateNavbarWalletBalance();
 });
+
+
+
+
+// 🔧 RIDE CANCELLATION FIX - Add this script to your index.html
+
+// Global variable to track current ride
+let currentRideId = null;
+
+// Function to cancel current ride with reason modal
+async function cancelCurrentRide() {
+  if (!currentRideId) {
+    alert('❌ No active ride to cancel');
+    return;
+  }
+
+  // Show cancellation reason modal
+  showCancellationReasonModal(currentRideId);
+}
+
+// Show modal to select cancellation reason
+function showCancellationReasonModal(rideId) {
+  const modal = document.createElement('div');
+  modal.id = 'cancellation-modal';
+  modal.style.cssText = `
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.85);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+    animation: fadeIn 0.3s ease;
+  `;
+  
+  modal.innerHTML = `
+    <div class="cancellation-card" style="
+      background: linear-gradient(135deg, #0f172a, #1e293b);
+      padding: 40px;
+      border-radius: 20px;
+      max-width: 550px;
+      width: 90%;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+      border: 2px solid rgba(239, 68, 68, 0.3);
+      animation: scaleIn 0.4s ease;
+    ">
+      <div style="text-align: center; margin-bottom: 30px;">
+        <i class="fas fa-times-circle" style="font-size: 4rem; color: #ef4444; margin-bottom: 15px;"></i>
+        <h2 style="margin: 0 0 10px; font-size: 1.8rem; color: white;">Cancel Ride?</h2>
+        <p style="color: #aaa; font-size: 1rem;">Please tell us why you're cancelling</p>
+      </div>
+      
+      <div class="cancellation-reasons" style="margin-bottom: 25px;">
+        <label style="display: block; margin-bottom: 15px; cursor: pointer; padding: 15px; background: rgba(255,255,255,0.05); border-radius: 10px; border: 2px solid transparent; transition: all 0.3s;">
+          <input type="radio" name="cancel-reason" value="Driver is taking too long" style="margin-right: 12px;">
+          <span style="color: white; font-size: 1rem;">🕐 Driver is taking too long</span>
+        </label>
+        
+        <label style="display: block; margin-bottom: 15px; cursor: pointer; padding: 15px; background: rgba(255,255,255,0.05); border-radius: 10px; border: 2px solid transparent; transition: all 0.3s;">
+          <input type="radio" name="cancel-reason" value="Changed my mind / plans changed" style="margin-right: 12px;">
+          <span style="color: white; font-size: 1rem;">🔄 Changed my mind / plans changed</span>
+        </label>
+        
+        <label style="display: block; margin-bottom: 15px; cursor: pointer; padding: 15px; background: rgba(255,255,255,0.05); border-radius: 10px; border: 2px solid transparent; transition: all 0.3s;">
+          <input type="radio" name="cancel-reason" value="Booked by mistake" style="margin-right: 12px;">
+          <span style="color: white; font-size: 1rem;">❌ Booked by mistake</span>
+        </label>
+        
+        <label style="display: block; margin-bottom: 15px; cursor: pointer; padding: 15px; background: rgba(255,255,255,0.05); border-radius: 10px; border: 2px solid transparent; transition: all 0.3s;">
+          <input type="radio" name="cancel-reason" value="Found alternative transport" style="margin-right: 12px;">
+          <span style="color: white; font-size: 1rem;">🚕 Found alternative transport</span>
+        </label>
+        
+        <label style="display: block; margin-bottom: 15px; cursor: pointer; padding: 15px; background: rgba(255,255,255,0.05); border-radius: 10px; border: 2px solid transparent; transition: all 0.3s;">
+          <input type="radio" name="cancel-reason" value="other" style="margin-right: 12px;">
+          <span style="color: white; font-size: 1rem;">✍️ Other reason</span>
+        </label>
+        
+        <div id="other-reason-input" style="display: none; margin-top: 15px;">
+          <textarea id="other-reason-text" 
+            placeholder="Please specify your reason..."
+            style="
+              width: 100%;
+              padding: 15px;
+              background: rgba(255, 255, 255, 0.05);
+              border: 1px solid rgba(255, 255, 255, 0.1);
+              border-radius: 10px;
+              color: white;
+              font-size: 1rem;
+              resize: vertical;
+              min-height: 80px;
+            "></textarea>
+        </div>
+      </div>
+      
+      <div style="display: flex; gap: 15px;">
+        <button id="cancel-modal-close" style="
+          flex: 1;
+          padding: 15px;
+          background: rgba(255, 255, 255, 0.1);
+          border: 1px solid rgba(255, 255, 255, 0.2);
+          color: white;
+          border-radius: 10px;
+          font-size: 1rem;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.3s;
+        ">Go Back</button>
+        
+        <button id="confirm-cancel-btn" disabled style="
+          flex: 2;
+          padding: 15px;
+          background: linear-gradient(135deg, #ef4444, #dc2626);
+          border: none;
+          color: white;
+          border-radius: 10px;
+          font-size: 1rem;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.3s;
+          opacity: 0.5;
+        ">Confirm Cancellation</button>
+      </div>
+    </div>
+  `;
+  
+  document.body.appendChild(modal);
+  
+  // Add hover effects to reason labels
+  const reasonLabels = modal.querySelectorAll('label');
+  reasonLabels.forEach(label => {
+    label.addEventListener('mouseenter', function() {
+      this.style.background = 'rgba(255, 255, 255, 0.08)';
+      this.style.borderColor = 'rgba(239, 68, 68, 0.3)';
+    });
+    label.addEventListener('mouseleave', function() {
+      if (!this.querySelector('input').checked) {
+        this.style.background = 'rgba(255, 255, 255, 0.05)';
+        this.style.borderColor = 'transparent';
+      }
+    });
+  });
+  
+  // Handle reason selection
+  const reasonRadios = modal.querySelectorAll('input[name="cancel-reason"]');
+  const otherReasonInput = modal.querySelector('#other-reason-input');
+  const otherReasonText = modal.querySelector('#other-reason-text');
+  const confirmBtn = modal.querySelector('#confirm-cancel-btn');
+  
+  reasonRadios.forEach(radio => {
+    radio.addEventListener('change', function() {
+      // Reset all labels
+      reasonLabels.forEach(lbl => {
+        lbl.style.background = 'rgba(255, 255, 255, 0.05)';
+        lbl.style.borderColor = 'transparent';
+      });
+      
+      // Highlight selected
+      const selectedLabel = this.closest('label');
+      selectedLabel.style.background = 'rgba(239, 68, 68, 0.15)';
+      selectedLabel.style.borderColor = '#ef4444';
+      
+      // Show/hide other reason input
+      if (this.value === 'other') {
+        otherReasonInput.style.display = 'block';
+        confirmBtn.disabled = otherReasonText.value.trim() === '';
+      } else {
+        otherReasonInput.style.display = 'none';
+        confirmBtn.disabled = false;
+        confirmBtn.style.opacity = '1';
+      }
+    });
+  });
+  
+  // Enable confirm button when other reason is typed
+  otherReasonText.addEventListener('input', function() {
+    const otherRadio = modal.querySelector('input[value="other"]');
+    if (otherRadio.checked) {
+      confirmBtn.disabled = this.value.trim() === '';
+      confirmBtn.style.opacity = this.value.trim() === '' ? '0.5' : '1';
+    }
+  });
+  
+  // Close modal button
+  modal.querySelector('#cancel-modal-close').addEventListener('click', () => {
+    modal.remove();
+  });
+  
+  // Confirm cancellation
+  confirmBtn.addEventListener('click', async function() {
+    const selectedReason = modal.querySelector('input[name="cancel-reason"]:checked');
+    
+    if (!selectedReason) {
+      alert('⚠️ Please select a reason for cancellation');
+      return;
+    }
+    
+    let reason = selectedReason.value;
+    
+    if (reason === 'other') {
+      reason = otherReasonText.value.trim();
+      if (!reason) {
+        alert('⚠️ Please specify your reason');
+        return;
+      }
+    }
+    
+    // Proceed with cancellation
+    await processCancellation(rideId, reason, modal);
+  });
+}
+
+// Process the actual cancellation
+async function processCancellation(rideId, reason, modal) {
+  const confirmBtn = modal.querySelector('#confirm-cancel-btn');
+  
+  confirmBtn.disabled = true;
+  confirmBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Cancelling...';
+  
+  try {
+    console.log('🚫 Cancelling ride:', rideId, 'Reason:', reason);
+    
+    const response = await fetch(`/user/cancel_ride/${rideId}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ reason: reason })
+    });
+
+    const data = await response.json();
+
+    if (response.ok) {
+      console.log('✅ Ride cancelled:', data);
+      
+      modal.remove();
+      
+      // Show success message
+      alert('✅ Ride cancelled successfully!\n\nThe driver has been notified.');
+      
+      // Update wallet balance if function exists
+      if (typeof updateNavbarWalletBalance === 'function') {
+        setTimeout(updateNavbarWalletBalance, 500);
+      }
+      
+      // Go back to home
+      if (typeof showPage === 'function') {
+        showPage('home');
+      }
+      currentRideId = null;
+      
+    } else {
+      alert('❌ ' + (data.error || 'Failed to cancel ride'));
+      
+      confirmBtn.disabled = false;
+      confirmBtn.innerHTML = 'Confirm Cancellation';
+    }
+
+  } catch (error) {
+    console.error('❌ Error cancelling ride:', error);
+    alert('❌ Network error. Please check your connection and try again.');
+    
+    confirmBtn.disabled = false;
+    confirmBtn.innerHTML = 'Confirm Cancellation';
+  }
+}
+
+// Make functions globally accessible
+window.cancelCurrentRide = cancelCurrentRide;
+window.showCancellationReasonModal = showCancellationReasonModal;
+window.processCancellation = processCancellation;
+
+console.log('✅ Ride cancellation system loaded');
 </script>
 
 
